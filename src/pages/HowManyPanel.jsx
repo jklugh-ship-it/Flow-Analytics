@@ -35,7 +35,7 @@ export default function HowManyPanel({ throughputWindow }) {
   // Initialize default horizon: tomorrow → tomorrow+13
   // ────────────────────────────────────────────────────────────────
   //
- // We intentionally run this only once on mount.
+// We intentionally run this only once on mount.
 // eslint-disable-next-line react-hooks/exhaustive-deps
 useEffect(() => {
   if (!startDate || !endDate) {
