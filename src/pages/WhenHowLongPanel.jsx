@@ -11,12 +11,11 @@ import {
   ReferenceLine
 } from "recharts";
 
-export default function WhenHowLongPage() {
+export default function WhenHowLongPanel() {
   const throughputHistory = useAnalyticsStore((s) => s.throughputHistory);
   const workflowStates = useAnalyticsStore((s) => s.workflowStates);
   const uploadedFileName = useAnalyticsStore((s) => s.uploadedFileName);
 
-  // Persistent state
   const results = useAnalyticsStore((s) => s.whenHowLongResults);
   const percentiles = useAnalyticsStore((s) => s.whenHowLongPercentiles);
   const settings = useAnalyticsStore((s) => s.whenHowLongSettings);
@@ -25,20 +24,11 @@ export default function WhenHowLongPage() {
   const setPercentiles = useAnalyticsStore((s) => s.setWhenHowLongPercentiles);
   const setSettings = useAnalyticsStore((s) => s.setWhenHowLongSettings);
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Initialize defaults only once
-  // ────────────────────────────────────────────────────────────────
-  //
-  // We intentionally run this only once on mount.
+  // Initialize defaults once
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (settings.targetCount == null) {
-      setSettings({ targetCount: 10 });
-    }
-    if (settings.simCount == null) {
-      setSettings({ simCount: 2000 });
-    }
+    if (settings.targetCount == null) setSettings({ targetCount: 10 });
+    if (settings.simCount == null) setSettings({ simCount: 2000 });
   }, []);
 
   const targetCount = settings.targetCount;
@@ -46,51 +36,51 @@ export default function WhenHowLongPage() {
 
   //
   // ────────────────────────────────────────────────────────────────
-  // Stable simulation runner (memoized)
+  // LEGAL: Call the hook at the top level (not inside useMemo)
   // ────────────────────────────────────────────────────────────────
   //
-  const runSimulation = useMemo(() => {
-    return useMonteCarloWhenHowLong({
-      throughputHistory,
-      workflowStates,
-      targetCount,
-      numSimulations: simCount,
-      setResults,
-      setPercentiles
-    });
-  }, [
+  const simulationFn = useMonteCarloWhenHowLong({
     throughputHistory,
     workflowStates,
     targetCount,
-    simCount,
+    numSimulations: simCount,
     setResults,
     setPercentiles
+  });
+
+  //
+  // ────────────────────────────────────────────────────────────────
+  // Memoize the returned function (legal)
+  // ────────────────────────────────────────────────────────────────
+  //
+  const runSimulation = useMemo(() => simulationFn, [
+    simulationFn
   ]);
 
   //
   // ────────────────────────────────────────────────────────────────
-  // Guardrails (memoized)
+  // Guardrails
   // ────────────────────────────────────────────────────────────────
   //
   const guardrailMessage = useMemo(() => {
-    if (!throughputHistory || throughputHistory.length === 0) {
+    if (!throughputHistory || throughputHistory.length === 0)
       return "No throughput data available. Upload a dataset first.";
-    }
-    if (throughputHistory.every((t) => t === 0)) {
+
+    if (throughputHistory.every((t) => t === 0))
       return "Throughput history contains only zeros. No items can be completed.";
-    }
-    if (targetCount <= 0) {
+
+    if (targetCount <= 0)
       return "Target count must be greater than zero.";
-    }
-    if (simCount < 100) {
+
+    if (simCount < 100)
       return "Simulation count must be at least 100 for a stable forecast.";
-    }
+
     return null;
   }, [throughputHistory, targetCount, simCount]);
 
   //
   // ────────────────────────────────────────────────────────────────
-  // Automatically rerun simulation when inputs change
+  // Auto-run simulation when inputs change
   // ────────────────────────────────────────────────────────────────
   //
   useEffect(() => {
@@ -103,7 +93,7 @@ export default function WhenHowLongPage() {
     throughputHistory,
     targetCount,
     simCount
-    // ❗ runSimulation intentionally omitted — it's stable via useMemo
+    // runSimulation intentionally omitted — it's stable via useMemo
   ]);
 
   //
@@ -133,7 +123,6 @@ export default function WhenHowLongPage() {
     <div style={{ padding: "1.5rem" }}>
       <h1 style={{ marginBottom: "1rem" }}>When Will We Finish?</h1>
 
-      {/* Global CSV status */}
       <div style={{ fontStyle: "italic", opacity: 0.8, marginBottom: "1rem" }}>
         {uploadedFileName
           ? `Using data from: ${uploadedFileName}`
