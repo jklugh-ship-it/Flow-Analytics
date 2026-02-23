@@ -1,25 +1,30 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import AppLayout from "./layout/AppLayout";
 
-function App() {
+import LandingPage from "./pages/LandingPage";
+import WorkflowPage from "./pages/WorkflowPage";
+import Overview from "./pages/Overview";
+import Forecasts from "./pages/Forecasts";
+
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <AppLayout>
+        <Routes>
+          {/* Home */}
+          <Route path="/" element={<LandingPage />} />
+
+          {/* Workflow Designer */}
+          <Route path="/workflow" element={<WorkflowPage />} />
+
+          {/* New analytics pages */}
+          <Route path="/overview" element={<Overview />} />
+          <Route path="/forecasts" element={<Forecasts />} />
+
+          {/* Default fallback */}
+          <Route path="*" element={<Navigate to="/overview" replace />} />
+        </Routes>
+      </AppLayout>
+    </Router>
   );
 }
-
-export default App;
