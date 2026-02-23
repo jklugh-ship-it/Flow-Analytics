@@ -35,21 +35,24 @@ export default function HowManyPanel({ throughputWindow }) {
   // Initialize default horizon: tomorrow → tomorrow+13
   // ────────────────────────────────────────────────────────────────
   //
-  useEffect(() => {
-    if (!startDate || !endDate) {
-      const today = new Date();
-      const start = new Date(today);
-      start.setDate(start.getDate() + 1);
+ // We intentionally run this only once on mount.
+// eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  if (!startDate || !endDate) {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() + 1);
 
-      const end = new Date(start);
-      end.setDate(end.getDate() + 13);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 13);
 
-      setSettings({
-        startDate: start.toISOString().slice(0, 10),
-        endDate: end.toISOString().slice(0, 10)
-      });
-    }
-  }, []);
+    setSettings({
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10)
+    });
+  }
+}, []);
+
 
   //
   // ────────────────────────────────────────────────────────────────

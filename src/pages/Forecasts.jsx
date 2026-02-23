@@ -45,13 +45,13 @@ export default function Forecasts() {
     if (startDate) {
       setStartDateInput(startDate.toISOString().slice(0, 10));
     }
-  }, [startIndex]);
+  }, [startDate]);
 
   useEffect(() => {
     if (endDate) {
       setEndDateInput(endDate.toISOString().slice(0, 10));
     }
-  }, [endIndex]);
+  }, [endDate]);
 
   // Update index when typed date becomes valid
   useEffect(() => {

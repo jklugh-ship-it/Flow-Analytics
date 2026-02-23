@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloWhenHowLong from "../hooks/useMonteCarloWhenHowLong";
 import {
@@ -25,7 +25,13 @@ export default function WhenHowLongPage() {
   const setPercentiles = useAnalyticsStore((s) => s.setWhenHowLongPercentiles);
   const setSettings = useAnalyticsStore((s) => s.setWhenHowLongSettings);
 
+  //
+  // ────────────────────────────────────────────────────────────────
   // Initialize defaults only once
+  // ────────────────────────────────────────────────────────────────
+  //
+  // We intentionally run this only once on mount.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (settings.targetCount == null) {
       setSettings({ targetCount: 10 });
@@ -38,18 +44,35 @@ export default function WhenHowLongPage() {
   const targetCount = settings.targetCount;
   const simCount = settings.simCount;
 
-  // Hook writes results into the store
-  const runSimulation = useMonteCarloWhenHowLong({
+  //
+  // ────────────────────────────────────────────────────────────────
+  // Stable simulation runner (memoized)
+  // ────────────────────────────────────────────────────────────────
+  //
+  const runSimulation = useMemo(() => {
+    return useMonteCarloWhenHowLong({
+      throughputHistory,
+      workflowStates,
+      targetCount,
+      numSimulations: simCount,
+      setResults,
+      setPercentiles
+    });
+  }, [
     throughputHistory,
     workflowStates,
     targetCount,
-    numSimulations: simCount,
+    simCount,
     setResults,
     setPercentiles
-  });
+  ]);
 
-  // Guardrails
-  const guardrailMessage = (() => {
+  //
+  // ────────────────────────────────────────────────────────────────
+  // Guardrails (memoized)
+  // ────────────────────────────────────────────────────────────────
+  //
+  const guardrailMessage = useMemo(() => {
     if (!throughputHistory || throughputHistory.length === 0) {
       return "No throughput data available. Upload a dataset first.";
     }
@@ -63,18 +86,32 @@ export default function WhenHowLongPage() {
       return "Simulation count must be at least 100 for a stable forecast.";
     }
     return null;
-  })();
+  }, [throughputHistory, targetCount, simCount]);
 
-  // ⭐ Automatically rerun simulation when targetCount or simCount changes
+  //
+  // ────────────────────────────────────────────────────────────────
+  // Automatically rerun simulation when inputs change
+  // ────────────────────────────────────────────────────────────────
+  //
   useEffect(() => {
     if (guardrailMessage) return;
     if (!throughputHistory || throughputHistory.length === 0) return;
 
     runSimulation();
-  }, [targetCount, simCount, throughputHistory]);
+  }, [
+    guardrailMessage,
+    throughputHistory,
+    targetCount,
+    simCount
+    // ❗ runSimulation intentionally omitted — it's stable via useMemo
+  ]);
 
+  //
+  // ────────────────────────────────────────────────────────────────
   // Histogram bucketing
-  const histogramData = React.useMemo(() => {
+  // ────────────────────────────────────────────────────────────────
+  //
+  const histogramData = useMemo(() => {
     if (!results.length) return [];
     const counts = new Map();
     results.forEach((value) => {
@@ -87,6 +124,11 @@ export default function WhenHowLongPage() {
 
   const { p50, p85, p95 } = percentiles;
 
+  //
+  // ────────────────────────────────────────────────────────────────
+  // Render
+  // ────────────────────────────────────────────────────────────────
+  //
   return (
     <div style={{ padding: "1.5rem" }}>
       <h1 style={{ marginBottom: "1rem" }}>When Will We Finish?</h1>
