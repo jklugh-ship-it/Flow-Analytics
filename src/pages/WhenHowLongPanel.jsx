@@ -67,13 +67,13 @@ export default function WhenHowLongPanel({ throughputWindow }) {
     numSimulations: simCount,
     setResults,
     setPercentiles,
-    setFallbackUsed
+    setFallbackUsed,
   });
 
   const handleRun = useCallback(() => {
     if (!guardrailMessage) runSimulation();
   }, [guardrailMessage, runSimulation]);
-
+  
   const histogramData = useMemo(() => {
     if (!results || results.length === 0) return [];
     const counts = new Map();

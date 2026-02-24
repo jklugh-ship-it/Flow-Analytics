@@ -23,7 +23,7 @@ export default function ThroughputPreviewChart({
   const stableEnd = useMemo(() => endDate || null, [endDate]);
 
   // -------------------------------------------------------
-  // Memoized shading data (CRITICAL FIX)
+  // Memoized shading data
   // -------------------------------------------------------
   const shadedData = useMemo(() => {
     if (!throughputRun || throughputRun.length === 0) return [];
@@ -43,16 +43,51 @@ export default function ThroughputPreviewChart({
   }, [throughputRun, stableStart, stableEnd]);
 
   // -------------------------------------------------------
-  // Compute shaded region boundaries
+  // Only shade if BOTH dates are set
   // -------------------------------------------------------
-  const hasRange = stableStart && stableEnd;
+  const hasRange = Boolean(stableStart && stableEnd);
+
+  // -------------------------------------------------------
+  // First date label for context
+  // -------------------------------------------------------
+  const firstDate = throughputRun?.[0]?.date || null;
 
   return (
-    <div style={{ width: "100%", height: 250 }}>
+    <div style={{ width: "100%", height: 260 }}>
+      {/* Contextual start date */}
+      {firstDate && (
+        <div
+          style={{
+            fontSize: "0.75rem",
+            opacity: 0.6,
+            marginBottom: "0.25rem"
+          }}
+        >
+          Starting {firstDate}
+        </div>
+      )}
+
       <ResponsiveContainer>
         <AreaChart data={shadedData}>
-          <XAxis dataKey="date" />
-          <YAxis />
+          {/* CLEAN X-AXIS: no ticks, no labels, no clutter */}
+        <XAxis
+  dataKey="date"
+  tick={false}
+ hide={true}
+ axisLine={false}
+  tickLine={false}
+  interval="preserveStart"
+  minTickGap={9999}
+/>
+
+
+          <YAxis
+            width={30}
+            tick={{ fontSize: 12 }}
+            axisLine={false}
+            tickLine={false}
+          />
+
           <Tooltip />
 
           {/* Base throughput line */}
@@ -62,10 +97,10 @@ export default function ThroughputPreviewChart({
             stroke="#2563eb"
             fill="#93c5fd"
             fillOpacity={0.3}
-            isAnimationActive={false} // prevents flicker
+            isAnimationActive={false}
           />
 
-          {/* Shaded region */}
+          {/* Shaded region only if both dates are set */}
           {hasRange && (
             <ReferenceArea
               x1={stableStart}
@@ -74,7 +109,7 @@ export default function ThroughputPreviewChart({
               fill="#2563eb"
               fillOpacity={0.15}
               strokeOpacity={0}
-              isAnimationActive={false} // prevents flicker
+              isAnimationActive={false}
             />
           )}
         </AreaChart>

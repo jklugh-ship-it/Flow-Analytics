@@ -80,6 +80,9 @@ export default function HowManyPanel({ throughputWindow }) {
   }, [fullThroughput, startDate, endDate, days, simCount]);
 
   // Hook
+  
+  const [zeroWarning, setZeroWarning] = useState(false);
+
   const runSimulation = useMonteCarloHowMany({
     throughputWindow,
     fullThroughput,
@@ -87,13 +90,14 @@ export default function HowManyPanel({ throughputWindow }) {
     numSimulations: simCount,
     setResults,
     setPercentiles,
-    setFallbackUsed
+    setFallbackUsed,
+	setZeroWarning
   });
 
   const handleRun = useCallback(() => {
     if (!guardrailMessage) runSimulation();
   }, [guardrailMessage, runSimulation]);
-
+  
   // Histogram
   const histogramData = useMemo(() => {
     if (!results || results.length === 0) return [];
@@ -109,6 +113,14 @@ export default function HowManyPanel({ throughputWindow }) {
   return (
     <div style={{ padding: "1.5rem" }}>
       <h2>How Many Can We Finish?</h2>
+
+  {zeroWarning && (
+  <div className="warning">
+    This dataset contains mostly zero-throughput days. Forecasts may be unstable.
+  </div>
+)}
+
+
 
       {/* Controls */}
       <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>

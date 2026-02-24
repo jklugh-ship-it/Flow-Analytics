@@ -20,19 +20,19 @@ function simpleParseCsv(text) {
 function normalizeDate(value) {
   if (!value || value.trim() === "") return null;
 
-  // Handle ISO or MM/DD/YYYY
-  const isoMatch = /^\d{4}-\d{2}-\d{2}$/.test(value);
-  if (isoMatch) {
+  // Handle ISO YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     const [y, m, d] = value.split("-").map(Number);
+    if (y > 2100) return null; // guard against absurd future dates
     return new Date(y, m - 1, d).toISOString().slice(0, 10);
   }
 
+  // Handle MM/DD/YYYY
   const d = new Date(value);
-  if (!Number.isNaN(d.getTime())) {
-    return d.toISOString().slice(0, 10);
-  }
+  if (Number.isNaN(d.getTime())) return null;
+  if (d.getFullYear() > 2100) return null;
 
-  return null;
+  return d.toISOString().slice(0, 10);
 }
 
 /**
@@ -53,7 +53,21 @@ export function parseWorkflowCsv(csvText) {
   const errors = [];
   const { headers, data } = simpleParseCsv(csvText);
 
-  // Extract workflow states from CSV header
+  // -------------------------------------------------------
+  // 1. Remove empty rows (all fields blank)
+  // -------------------------------------------------------
+  const cleaned = data.filter((row) =>
+    Object.values(row).some((v) => v && v.trim() !== "")
+  );
+
+  if (cleaned.length === 0) {
+    errors.push("CSV contains no usable rows.");
+    return { items: [], workflowStates: [], errors };
+  }
+
+  // -------------------------------------------------------
+  // 2. Extract workflow states from CSV header
+  // -------------------------------------------------------
   const workflowStates = headers
     .filter((h) => h.startsWith("entered_"))
     .map((h) => h.replace("entered_", ""));
@@ -63,13 +77,18 @@ export function parseWorkflowCsv(csvText) {
     return { items: [], workflowStates: [], errors };
   }
 
-  // Validate first two columns
+  // -------------------------------------------------------
+  // 3. Validate first two columns
+  // -------------------------------------------------------
   if (headers[0] !== "id" || headers[1] !== "title") {
     errors.push(`CSV must begin with: id,title`);
     return { items: [], workflowStates: [], errors };
   }
 
-  const items = data.map((row, index) => {
+  // -------------------------------------------------------
+  // 4. Normalize each row
+  // -------------------------------------------------------
+  const items = cleaned.map((row, index) => {
     const id = row.id ?? "";
     const title = row.title ?? "";
 

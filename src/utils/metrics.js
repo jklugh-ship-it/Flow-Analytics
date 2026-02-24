@@ -155,39 +155,55 @@ export function computeWipRun(items) {
   });
 }
 
-// ------------------------------------------------------------
-// THROUGHPUT RUN
-// ------------------------------------------------------------
-//
-// Output shape (unchanged):
-// [
-//   { date: "2025-01-12", count: 3 },
-//   ...
-// ]
-//
+// -------------------------------------------------------
+// THROUGHPUT RUN (start at earliest entry date + zero-fill to today)
+// -------------------------------------------------------
 export function computeThroughputRun(items) {
   if (!items || items.length === 0) return [];
 
-  const completed = items
-    .filter((i) => i.completed)
-    .map((i) => parseDate(i.completed))
-    .filter(Boolean);
-
-  if (completed.length === 0) return [];
-
-  const minDate = new Date(Math.min(...completed.map((d) => d.getTime())));
-  const maxDate = new Date(Math.max(...completed.map((d) => d.getTime())));
-  const days = eachDay(minDate, maxDate);
-
-  return days.map((day) => {
-    const count = items.filter((i) => {
-      if (!i.completed) return false;
-      const cd = parseDate(i.completed);
-      return cd && formatDate(cd) === formatDate(day);
-    }).length;
-
-    return { date: formatDate(day), count };
+  // 1. Count completions by date
+  const counts = {};
+  items.forEach((item) => {
+    if (item.completed) {
+      counts[item.completed] = (counts[item.completed] || 0) + 1;
+    }
   });
+
+  // 2. Find earliest entry date across ALL workflow states
+  const allEntryDates = [];
+
+  items.forEach((item) => {
+    if (item.entered) {
+      Object.values(item.entered).forEach((d) => {
+        if (d) allEntryDates.push(d);
+      });
+    }
+  });
+
+  if (allEntryDates.length === 0) return [];
+
+  const firstEntry = new Date(allEntryDates.sort()[0]);
+  firstEntry.setHours(0, 0, 0, 0);
+
+  // 3. End at today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // 4. Build continuous timeline with zero-fill
+  const run = [];
+  let cursor = new Date(firstEntry);
+
+  while (cursor <= today) {
+    const iso = cursor.toISOString().slice(0, 10);
+    run.push({
+      date: iso,
+      count: counts[iso] || 0
+    });
+
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return run;
 }
 
 // ------------------------------------------------------------

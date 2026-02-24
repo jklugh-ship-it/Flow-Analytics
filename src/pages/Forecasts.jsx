@@ -1,22 +1,15 @@
 // src/pages/Forecasts.jsx
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import HowManyPanel from "./HowManyPanel";
 import WhenHowLongPanel from "./WhenHowLongPanel";
-
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer
-} from "recharts";
+import ThroughputPreviewChart from "../components/charts/ThroughputPreviewChart";
 
 export default function Forecasts() {
   const throughputRun = useAnalyticsStore((s) => s.metrics.throughputRun);
 
+  // Compute max index whenever data changes
   const maxIndex = throughputRun.length > 0 ? throughputRun.length - 1 : 0;
 
   // Text inputs (single source of truth)
@@ -26,6 +19,15 @@ export default function Forecasts() {
   // Committed indices (only update on blur or Enter)
   const [startIndex, setStartIndex] = useState(0);
   const [endIndex, setEndIndex] = useState(maxIndex);
+
+  // ⭐ Reset window automatically when new data loads
+  useEffect(() => {
+    if (throughputRun.length > 0) {
+      const newMax = throughputRun.length - 1;
+      setStartIndex(0);
+      setEndIndex(newMax);
+    }
+  }, [throughputRun]);
 
   // Commit handlers
   const commitStart = useCallback(() => {
@@ -63,10 +65,6 @@ export default function Forecasts() {
     return throughputRun.slice(startIndex, endIndex + 1);
   }, [throughputRun, startIndex, endIndex]);
 
-  // Shading proportions
-  const leftPercent = (startIndex / (maxIndex + 1)) * 100;
-  const widthPercent = ((endIndex - startIndex + 1) / (maxIndex + 1)) * 100;
-
   // Reset
   const resetWindow = () => {
     setStartDateInput("");
@@ -93,29 +91,11 @@ export default function Forecasts() {
           <h3>Throughput Preview</h3>
 
           <div style={{ position: "relative", width: "100%", height: 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={throughputRun}>
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#10b981" isAnimationActive={false} />
-              </BarChart>
-            </ResponsiveContainer>
-
-            {/* Shaded overlay */}
-            {throughputRun.length > 0 && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  left: `${leftPercent}%`,
-                  width: `${widthPercent}%`,
-                  background: "rgba(16,185,129,0.18)",
-                  pointerEvents: "none"
-                }}
-              />
-            )}
+            <ThroughputPreviewChart
+              throughputRun={throughputRun}
+              startDate={startDateInput}
+              endDate={endDateInput}
+            />
           </div>
         </section>
 

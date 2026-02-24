@@ -13,19 +13,26 @@ export default function useMonteCarloHowMany({
   setFallbackUsed
 }) {
   return useCallback(() => {
+    // Convert to arrays of counts (including zeros)
     const windowData = Array.isArray(throughputWindow)
-  ? throughputWindow.map(d => d.count)
-  : [];
-
+      ? throughputWindow.map(d => d.count)
+      : [];
 
     const fullData = fullThroughput.map(d => d.count);
 
-const useWindow =
-  windowData.length >= 5 ? windowData : fullData;
+    // NEW: only fall back if the window is literally empty
+    const useWindow = windowData.length > 0 ? windowData : fullData;
 
+    setFallbackUsed(windowData.length === 0);
 
-    setFallbackUsed(windowData.length < 5);
+    // If still no usable data, return empty results
+    if (useWindow.length === 0) {
+      setResults([]);
+      setPercentiles({ p05: null, p15: null, p50: null });
+      return;
+    }
 
+    // Run simulation
     const { p05, p15, p50, sims } = simulateHowMany({
       throughputSamples: useWindow,
       days,
