@@ -13,6 +13,8 @@ import {
 } from "@dnd-kit/sortable";
 import SortableItem from "./SortableItem";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
+import DownloadTemplateButton from "./DownloadTemplateButton";
+
 
 export default function WorkflowDesigner() {
   const workflowStates = useAnalyticsStore((s) => s.workflowStates);
@@ -107,7 +109,9 @@ export default function WorkflowDesigner() {
   return (
     <div style={{ padding: "1rem", border: "1px solid #ddd", borderRadius: 8 }}>
       <h2 style={{ marginBottom: "1rem" }}>Workflow Designer</h2>
-
+<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+  <DownloadTemplateButton />
+</div>
       {/* ADD NEW STATE */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
         <input
@@ -187,4 +191,5 @@ export default function WorkflowDesigner() {
       </DndContext>
     </div>
   );
+ 
 }

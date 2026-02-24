@@ -2,7 +2,6 @@
 
 import { create } from "zustand";
 import {
-  normalizeItems,
   computeCfd,
   computeWipRun,
   computeThroughputRun,
@@ -13,7 +12,7 @@ import {
 export const useAnalyticsStore = create((set, get) => ({
 
   // -------------------------------------------------------
-  // WORKFLOW STATE
+  // WORKFLOW STATE (CSV is authoritative)
   // -------------------------------------------------------
   workflowStates: ["Refinement", "Development", "Testing", "Done"],
 
@@ -24,7 +23,6 @@ export const useAnalyticsStore = create((set, get) => ({
     Done: true
   },
 
-  // Replace entire workflow (drag/drop, merge, CSV ingestion)
   setWorkflowStates: (states) =>
     set((prev) => {
       const visibility = { ...prev.workflowVisibility };
@@ -97,38 +95,20 @@ export const useAnalyticsStore = create((set, get) => ({
   setUploadedFileName: (name) => set({ uploadedFileName: name }),
 
   // -------------------------------------------------------
-  // RAW ITEMS
+  // RAW ITEMS (already normalized by parseWorkflowCsv)
   // -------------------------------------------------------
   items: [],
 
   setItems: (items) => {
-    // 1. Detect workflow states from CSV
-    const detectedStates = Object.keys(items[0] || [])
-      .filter((k) => k.startsWith("entered_"))
-      .map((k) => k.replace("entered_", ""));
-
-    // 2. Decide which workflow to use for normalization
-    const workflowToUse =
-      detectedStates.length > 0 ? detectedStates : get().workflowStates;
-
-    // 3. If CSV defines workflow, update store BEFORE normalization
-    if (detectedStates.length > 0) {
-      get().setWorkflowStates(detectedStates);
-    }
-
-    // 4. Normalize using the correct workflow
-    const normalized = normalizeItems(items, workflowToUse);
-
-    // 5. Reset simulations when dataset changes
+    // Items are already normalized by parseWorkflowCsv
     set({
-      items: normalized,
+      items,
       howManyResults: [],
       howManyPercentiles: {},
       whenHowLongResults: [],
       whenHowLongPercentiles: {}
     });
 
-    // 6. Recompute metrics + summary
     get().computeAllMetrics();
     get().computeSummary();
   },
@@ -150,7 +130,7 @@ export const useAnalyticsStore = create((set, get) => ({
     const { items, workflowStates } = get();
 
     const cfd = computeCfd(items, workflowStates);
-    const wipRun = computeWipRun(items, workflowStates);
+    const wipRun = computeWipRun(items);
     const throughputRun = computeThroughputRun(items);
     const cycleHistogram = computeCycleTimeHistogram(items);
     const cycleTimeScatter = computeCycleTimeScatter(items);
@@ -221,7 +201,7 @@ export const useAnalyticsStore = create((set, get) => ({
   howManySettings: {
     startDate: null,
     endDate: null,
-    simCount: 2000
+    simCount: 10000
   },
 
   setHowManyResults: (results) => set({ howManyResults: results }),
@@ -241,7 +221,7 @@ export const useAnalyticsStore = create((set, get) => ({
   whenHowLongPercentiles: {},
   whenHowLongSettings: {
     targetCount: 10,
-    simCount: 2000
+    simCount: 10000
   },
 
   setWhenHowLongResults: (results) => set({ whenHowLongResults: results }),

@@ -1,6 +1,6 @@
 // src/pages/Forecasts.jsx
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import HowManyPanel from "./HowManyPanel";
 import WhenHowLongPanel from "./WhenHowLongPanel";
@@ -19,82 +19,61 @@ export default function Forecasts() {
 
   const maxIndex = throughputRun.length > 0 ? throughputRun.length - 1 : 0;
 
-  // Index-based window
-  const [startIndex, setStartIndex] = useState(0);
-  const [endIndex, setEndIndex] = useState(maxIndex);
-
-  // Raw text inputs (Option D)
+  // Text inputs (single source of truth)
   const [startDateInput, setStartDateInput] = useState("");
   const [endDateInput, setEndDateInput] = useState("");
 
-  // Derived dates from indices (safe)
-  const startDate = useMemo(() => {
-    if (!throughputRun.length) return null;
-    if (startIndex < 0 || startIndex > maxIndex) return null;
-    return new Date(throughputRun[startIndex].date);
-  }, [throughputRun, startIndex, maxIndex]);
+  // Committed indices (only update on blur or Enter)
+  const [startIndex, setStartIndex] = useState(0);
+  const [endIndex, setEndIndex] = useState(maxIndex);
 
-  const endDate = useMemo(() => {
-    if (!throughputRun.length) return null;
-    if (endIndex < 0 || endIndex > maxIndex) return null;
-    return new Date(throughputRun[endIndex].date);
-  }, [throughputRun, endIndex, maxIndex]);
-
-  // Sync text inputs when indices change
-  useEffect(() => {
-    if (startDate) {
-      setStartDateInput(startDate.toISOString().slice(0, 10));
+  // Commit handlers
+  const commitStart = useCallback(() => {
+    if (!startDateInput) {
+      setStartIndex(0);
+      return;
     }
-  }, [startDate]);
-
-  useEffect(() => {
-    if (endDate) {
-      setEndDateInput(endDate.toISOString().slice(0, 10));
-    }
-  }, [endDate]);
-
-  // Update index when typed date becomes valid
-  useEffect(() => {
-    if (!startDateInput) return;
     const dt = new Date(startDateInput);
-    if (!isNaN(dt)) {
-      const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
-      if (idx === -1) {
-        setStartIndex(Math.max(0, endIndex - 1));
-      } else {
-        setStartIndex(Math.min(idx, endIndex - 1));
-      }
-    }
-  }, [startDateInput, throughputRun, endIndex]);
+    if (isNaN(dt)) return;
 
-  useEffect(() => {
-    if (!endDateInput) return;
-    const dt = new Date(endDateInput);
-    if (!isNaN(dt)) {
-      const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
-      if (idx === -1) {
-        setEndIndex(maxIndex);
-      } else {
-        setEndIndex(Math.max(idx, startIndex + 1));
-      }
+    const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
+    setStartIndex(idx === -1 ? 0 : idx);
+  }, [startDateInput, throughputRun]);
+
+  const commitEnd = useCallback(() => {
+    if (!endDateInput) {
+      setEndIndex(maxIndex);
+      return;
     }
+    const dt = new Date(endDateInput);
+    if (isNaN(dt)) return;
+
+    const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
+    setEndIndex(idx === -1 ? maxIndex : Math.max(idx, startIndex));
   }, [endDateInput, throughputRun, startIndex, maxIndex]);
 
-  // Filter throughput based on selected window
+  // Key handler for Enter
+  const handleKey = (e, commitFn) => {
+    if (e.key === "Enter") commitFn();
+  };
+
+  // Filter throughput based on committed window
   const filtered = useMemo(() => {
     if (!throughputRun.length) return [];
     return throughputRun.slice(startIndex, endIndex + 1);
   }, [throughputRun, startIndex, endIndex]);
 
-  // Reset to full dataset
-  const resetWindow = () => {
-    setStartIndex(0);
-    setEndIndex(maxIndex);
-  };
-
   // Shading proportions
   const leftPercent = (startIndex / (maxIndex + 1)) * 100;
   const widthPercent = ((endIndex - startIndex + 1) / (maxIndex + 1)) * 100;
+
+  // Reset
+  const resetWindow = () => {
+    setStartDateInput("");
+    setEndDateInput("");
+    setStartIndex(0);
+    setEndIndex(maxIndex);
+  };
 
   return (
     <div style={{ padding: "1.5rem" }}>
@@ -119,7 +98,7 @@ export default function Forecasts() {
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="count" fill="#10b981" />
+                <Bar dataKey="count" fill="#10b981" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
 
@@ -140,110 +119,43 @@ export default function Forecasts() {
           </div>
         </section>
 
-        {/* Date Window Controls (Option D with visible icon) */}
+        {/* Date Window Controls */}
         <section>
           <h3>Data Window</h3>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-
-            {/* START DATE */}
             <label>
               Start Date
-              <div style={{ position: "relative", marginTop: "0.25rem" }}>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={startDateInput}
-                  onChange={(e) => setStartDateInput(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    paddingRight: "2.5rem",
-                    fontFamily: "monospace"
-                  }}
-                />
-
-                {/* Visible calendar icon */}
-                <div
-                  style={{
-                    position: "absolute",
-                    right: "0.5rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                    color: "#6b7280",
-                    fontSize: "1.1rem"
-                  }}
-                >
-                  📅
-                </div>
-
-                {/* Invisible native date picker */}
-                <input
-                  type="date"
-                  value={startDate ? startDate.toISOString().slice(0, 10) : ""}
-                  onChange={(e) => setStartDateInput(e.target.value)}
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: "2.5rem",
-                    opacity: 0,
-                    cursor: "pointer"
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="YYYY-MM-DD"
+                value={startDateInput}
+                onChange={(e) => setStartDateInput(e.target.value)}
+                onBlur={commitStart}
+                onKeyDown={(e) => handleKey(e, commitStart)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  fontFamily: "monospace"
+                }}
+              />
             </label>
 
-            {/* END DATE */}
             <label>
               End Date
-              <div style={{ position: "relative", marginTop: "0.25rem" }}>
-                <input
-                  type="text"
-                  placeholder="YYYY-MM-DD"
-                  value={endDateInput}
-                  onChange={(e) => setEndDateInput(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "0.5rem",
-                    paddingRight: "2.5rem",
-                    fontFamily: "monospace"
-                  }}
-                />
-
-                {/* Visible calendar icon */}
-                <div
-                  style={{
-                    position: "absolute",
-                    right: "0.5rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                    color: "#6b7280",
-                    fontSize: "1.1rem"
-                  }}
-                >
-                  📅
-                </div>
-
-                {/* Invisible native date picker */}
-                <input
-                  type="date"
-                  value={endDate ? endDate.toISOString().slice(0, 10) : ""}
-                  onChange={(e) => setEndDateInput(e.target.value)}
-                  style={{
-                    position: "absolute",
-                    right: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: "2.5rem",
-                    opacity: 0,
-                    cursor: "pointer"
-                  }}
-                />
-              </div>
+              <input
+                type="text"
+                placeholder="YYYY-MM-DD"
+                value={endDateInput}
+                onChange={(e) => setEndDateInput(e.target.value)}
+                onBlur={commitEnd}
+                onKeyDown={(e) => handleKey(e, commitEnd)}
+                style={{
+                  width: "100%",
+                  padding: "0.5rem",
+                  fontFamily: "monospace"
+                }}
+              />
             </label>
 
             <button
@@ -277,20 +189,6 @@ export default function Forecasts() {
         <HowManyPanel throughputWindow={filtered} />
         <WhenHowLongPanel throughputWindow={filtered} />
       </div>
-
-      {/* Mobile stacking */}
-      <style>
-        {`
-          @media (max-width: 900px) {
-            div[style*="grid-template-columns: 2fr 1fr"] {
-              grid-template-columns: 1fr !important;
-            }
-            div[style*="grid-template-columns: 1fr 1fr"] {
-              grid-template-columns: 1fr !important;
-            }
-          }
-        `}
-      </style>
     </div>
   );
 }

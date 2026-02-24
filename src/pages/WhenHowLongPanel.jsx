@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo } from "react";
+// src/pages/WhenHowLongPanel.jsx
+
+import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloWhenHowLong from "../hooks/useMonteCarloWhenHowLong";
+
 import {
   BarChart,
   Bar,
@@ -11,102 +14,70 @@ import {
   ReferenceLine
 } from "recharts";
 
-export default function WhenHowLongPanel() {
-  const throughputHistory = useAnalyticsStore((s) => s.throughputHistory);
-  const workflowStates = useAnalyticsStore((s) => s.workflowStates);
-  const uploadedFileName = useAnalyticsStore((s) => s.uploadedFileName);
+export default function WhenHowLongPanel({ throughputWindow }) {
+  const fullThroughput = useAnalyticsStore((s) => s.throughputHistory);
+
+  const targetCount = useAnalyticsStore((s) => s.whenHowLongSettings.targetCount);
+  const simCount = useAnalyticsStore((s) => s.whenHowLongSettings.simCount);
+  const startDate = useAnalyticsStore((s) => s.whenHowLongSettings.startDate);
 
   const results = useAnalyticsStore((s) => s.whenHowLongResults);
   const percentiles = useAnalyticsStore((s) => s.whenHowLongPercentiles);
-  const settings = useAnalyticsStore((s) => s.whenHowLongSettings);
 
+  const setSettings = useAnalyticsStore((s) => s.setWhenHowLongSettings);
   const setResults = useAnalyticsStore((s) => s.setWhenHowLongResults);
   const setPercentiles = useAnalyticsStore((s) => s.setWhenHowLongPercentiles);
-  const setSettings = useAnalyticsStore((s) => s.setWhenHowLongSettings);
 
-  // Initialize defaults once
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [fallbackUsed, setFallbackUsed] = useState(false);
+
+  // Initialize once
+// This effect intentionally runs only once on mount.
+// It initializes default settings if none exist.
+/* eslint-disable react-hooks/exhaustive-deps */
   useEffect(() => {
-    if (settings.targetCount == null) setSettings({ targetCount: 10 });
-    if (settings.simCount == null) setSettings({ simCount: 2000 });
+    if (targetCount && simCount) return;
+
+    setSettings({
+      targetCount: targetCount ?? 10,
+      simCount: simCount ?? 2000
+    });
   }, []);
+/* eslint-enable react-hooks/exhaustive-deps */
 
-  const targetCount = settings.targetCount;
-  const simCount = settings.simCount;
+  const guardrailMessage = useMemo(() => {
+    if (!fullThroughput || fullThroughput.length === 0)
+      return "No throughput data available.";
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // LEGAL: Call the hook at the top level (not inside useMemo)
-  // ────────────────────────────────────────────────────────────────
-  //
-  const simulationFn = useMonteCarloWhenHowLong({
-    throughputHistory,
-    workflowStates,
+    if (fullThroughput.every((t) => t === 0))
+      return "Throughput history contains only zeros.";
+
+    if (!targetCount || targetCount <= 0)
+      return "Target count must be at least 1.";
+
+    if (!simCount || simCount < 100)
+      return "Simulation count must be at least 100.";
+
+    return null;
+  }, [fullThroughput, targetCount, simCount]);
+
+  const runSimulation = useMonteCarloWhenHowLong({
+    throughputWindow,
+    fullThroughput,
     targetCount,
     numSimulations: simCount,
     setResults,
-    setPercentiles
+    setPercentiles,
+    setFallbackUsed
   });
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Memoize the returned function (legal)
-  // ────────────────────────────────────────────────────────────────
-  //
-  const runSimulation = useMemo(() => simulationFn, [
-    simulationFn
-  ]);
+  const handleRun = useCallback(() => {
+    if (!guardrailMessage) runSimulation();
+  }, [guardrailMessage, runSimulation]);
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Guardrails
-  // ────────────────────────────────────────────────────────────────
-  //
-  const guardrailMessage = useMemo(() => {
-    if (!throughputHistory || throughputHistory.length === 0)
-      return "No throughput data available. Upload a dataset first.";
-
-    if (throughputHistory.every((t) => t === 0))
-      return "Throughput history contains only zeros. No items can be completed.";
-
-    if (targetCount <= 0)
-      return "Target count must be greater than zero.";
-
-    if (simCount < 100)
-      return "Simulation count must be at least 100 for a stable forecast.";
-
-    return null;
-  }, [throughputHistory, targetCount, simCount]);
-
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Auto-run simulation when inputs change
-  // ────────────────────────────────────────────────────────────────
-  //
-  useEffect(() => {
-    if (guardrailMessage) return;
-    if (!throughputHistory || throughputHistory.length === 0) return;
-
-    runSimulation();
-  }, [
-    guardrailMessage,
-    throughputHistory,
-    targetCount,
-    simCount
-    // runSimulation intentionally omitted — it's stable via useMemo
-  ]);
-
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Histogram bucketing
-  // ────────────────────────────────────────────────────────────────
-  //
   const histogramData = useMemo(() => {
-    if (!results.length) return [];
+    if (!results || results.length === 0) return [];
     const counts = new Map();
-    results.forEach((value) => {
-      counts.set(value, (counts.get(value) || 0) + 1);
-    });
+    results.forEach((v) => counts.set(v, (counts.get(v) || 0) + 1));
     return Array.from(counts.entries())
       .map(([value, count]) => ({ value, count }))
       .sort((a, b) => a.value - b.value);
@@ -114,149 +85,126 @@ export default function WhenHowLongPanel() {
 
   const { p50, p85, p95 } = percentiles;
 
-  //
-  // ────────────────────────────────────────────────────────────────
-  // Render
-  // ────────────────────────────────────────────────────────────────
-  //
+  const endDates = useMemo(() => {
+    if (!startDate || !p50) return null;
+
+    const base = new Date(startDate);
+    const add = (d) => {
+      const dt = new Date(base);
+      dt.setDate(dt.getDate() + d);
+      return dt.toISOString().slice(0, 10);
+    };
+
+    return {
+      p50: add(p50),
+      p85: add(p85),
+      p95: add(p95)
+    };
+  }, [startDate, p50, p85, p95]);
+
   return (
     <div style={{ padding: "1.5rem" }}>
-      <h1 style={{ marginBottom: "1rem" }}>When Will We Finish?</h1>
+      <h2>When / How Long?</h2>
 
-      <div style={{ fontStyle: "italic", opacity: 0.8, marginBottom: "1rem" }}>
-        {uploadedFileName
-          ? `Using data from: ${uploadedFileName}`
-          : "No data uploaded"}
-      </div>
+      {/* Controls */}
+      <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+        <div>
+          <label>Target count</label>
+          <input
+            type="number"
+            min={1}
+            value={targetCount ?? ""}
+            onChange={(e) =>
+              setSettings({ targetCount: Number(e.target.value) || null })
+            }
+          />
+        </div>
+        <div>
+          <label>Simulations</label>
+          <input
+            type="number"
+            min={100}
+            value={simCount ?? ""}
+            onChange={(e) =>
+              setSettings({ simCount: Number(e.target.value) || null })
+            }
+          />
+        </div>
+        <div>
+          <label>Start date (optional)</label>
+          <input
+            type="date"
+            value={startDate || ""}
+            onChange={(e) =>
+              setSettings({ startDate: e.target.value || null })
+            }
+          />
+        </div>
+        <div style={{ alignSelf: "flex-end" }}>
+          <button onClick={handleRun} disabled={!!guardrailMessage}>
+            Run Simulation
+          </button>
+        </div>
+      </section>
 
       {guardrailMessage && (
-        <div
-          style={{
-            background: "#fee2e2",
-            color: "#991b1b",
-            padding: "0.75rem 1rem",
-            borderRadius: "4px",
-            marginBottom: "1.5rem"
-          }}
-        >
+        <div style={{ background: "#fee2e2", padding: "0.75rem", marginBottom: "0.75rem" }}>
           {guardrailMessage}
         </div>
       )}
 
-      {/* Controls */}
-      <section style={{ marginBottom: "2rem" }}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Target item count: </label>
-          <input
-            type="number"
-            value={targetCount}
-            min={1}
-            onChange={(e) =>
-              setSettings({ targetCount: Number(e.target.value) })
-            }
-            style={{ width: "100px", marginLeft: "0.5rem" }}
-          />
+      {fallbackUsed && (
+        <div style={{ background: "#fff3cd", padding: "0.75rem", marginBottom: "0.75rem" }}>
+          Selected window has fewer than 5 data points. Using full dataset instead.
         </div>
-
-        <div style={{ marginBottom: "1rem" }}>
-          <label>Simulations: </label>
-          <input
-            type="number"
-            value={simCount}
-            min={100}
-            onChange={(e) => setSettings({ simCount: Number(e.target.value) })}
-            style={{ width: "100px", marginLeft: "0.5rem" }}
-          />
-        </div>
-
-        <button
-          onClick={runSimulation}
-          disabled={!!guardrailMessage}
-          style={{
-            padding: "0.5rem 1rem",
-            background: guardrailMessage ? "#9ca3af" : "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: guardrailMessage ? "not-allowed" : "pointer"
-          }}
-        >
-          Run Simulation
-        </button>
-      </section>
+      )}
 
       {/* Results */}
-      <section style={{ marginBottom: "2rem" }}>
+      <section style={{ marginBottom: "1.5rem" }}>
         <h3>Results</h3>
-
-        {p50 != null ? (
+        {!p50 ? (
+          <p>No simulation run yet.</p>
+        ) : (
           <ul>
             <li>
-              50% probability of completing <strong>{targetCount}</strong> items
-              in <strong>{p50}</strong> days or less
+              There is a <strong>50%</strong> chance of finishing in{" "}
+              <strong>{p50}</strong> days or fewer
+              {startDate && endDates ? ` (around ${endDates.p50})` : ""}.
             </li>
             <li>
-              85% probability of completing <strong>{targetCount}</strong> items
-              in <strong>{p85}</strong> days or less
+              There is a <strong>85%</strong> chance of finishing in{" "}
+              <strong>{p85}</strong> days or fewer
+              {startDate && endDates ? ` (around ${endDates.p85})` : ""}.
             </li>
             <li>
-              95% probability of completing <strong>{targetCount}</strong> items
-              in <strong>{p95}</strong> days or less
+              There is a <strong>95%</strong> chance of finishing in{" "}
+              <strong>{p95}</strong> days or fewer
+              {startDate && endDates ? ` (around ${endDates.p95})` : ""}.
             </li>
           </ul>
-        ) : (
-          <p>No simulation run yet.</p>
         )}
       </section>
 
       {/* Histogram */}
       <section>
-        <h3>Distribution</h3>
-
+        <h3>Distribution of completion times</h3>
         {histogramData.length === 0 ? (
           <p>No data yet. Run a simulation.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={histogramData}>
-              <XAxis
-                dataKey="value"
-                type="number"
-                domain={[
-                  (min) => min - 0.5,
-                  (max) => max + 0.5
-                ]}
-                tickFormatter={(v) => Math.round(v)}
-              />
+              <XAxis dataKey="value" type="number" />
               <YAxis />
-              <Tooltip
-                formatter={(v) => v}
-                labelFormatter={(v) => `${Math.round(v)} days`}
-              />
-              <Bar dataKey="count" fill="#3b82f6" />
-
-              {p50 != null && (
-                <ReferenceLine
-                  x={p50}
-                  stroke="#10b981"
-                  strokeDasharray="3 3"
-                  label="P50"
-                />
+              <Tooltip />
+              <Bar dataKey="count" fill="#3b82f6" isAnimationActive={false} />
+              {p50 && (
+                <ReferenceLine x={p50} stroke="green" strokeDasharray="3 3" label="P50" />
               )}
-              {p85 != null && (
-                <ReferenceLine
-                  x={p85}
-                  stroke="#f59e0b"
-                  strokeDasharray="3 3"
-                  label="P85"
-                />
+              {p85 && (
+                <ReferenceLine x={p85} stroke="orange" strokeDasharray="3 3" label="P85" />
               )}
-              {p95 != null && (
-                <ReferenceLine
-                  x={p95}
-                  stroke="#ef4444"
-                  strokeDasharray="3 3"
-                  label="P95"
-                />
+              {p95 && (
+                <ReferenceLine x={p95} stroke="red" strokeDasharray="3 3" label="P95" />
               )}
             </BarChart>
           </ResponsiveContainer>

@@ -1,17 +1,20 @@
+// src/layout/HeaderBar.jsx
+
 import React from "react";
 import { useLocation } from "react-router-dom";
-import Papa from "papaparse";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
+import { parseWorkflowCsv } from "../utils/parseWorkflowCsv";
 
 export default function HeaderBar() {
   const location = useLocation();
 
   // Store actions
   const setItems = useAnalyticsStore((s) => s.setItems);
+  const setWorkflowStates = useAnalyticsStore((s) => s.setWorkflowStates);
   const workflowStates = useAnalyticsStore((s) => s.workflowStates);
   const resetStore = useAnalyticsStore((s) => s.resetStore);
 
-  // NEW: global CSV filename
+  // CSV filename
   const uploadedFileName = useAnalyticsStore((s) => s.uploadedFileName);
   const setUploadedFileName = useAnalyticsStore((s) => s.setUploadedFileName);
 
@@ -34,19 +37,32 @@ export default function HeaderBar() {
   // -----------------------------
   // ACTION: Upload CSV
   // -----------------------------
-  const handleCsvUpload = (e) => {
-    const file = e.target.files[0];
+  const handleCsvUpload = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
 
+    const text = await file.text();
+
+    // Parse CSV using the new ingestion pipeline
+    const { items, workflowStates: detectedStates, errors } = parseWorkflowCsv(text);
+
+    if (errors.length > 0) {
+      alert(errors.join("\n"));
+      e.target.value = "";
+      return;
+    }
+
+    // CSV is authoritative → update workflow states
+    if (detectedStates.length > 0) {
+      setWorkflowStates(detectedStates);
+    }
+
+    // Store normalized items
+    setItems(items);
     setUploadedFileName(file.name);
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        setItems(results.data); // triggers normalization + metrics + summary
-      }
-    });
+    // Allow re-upload of same file
+    e.target.value = "";
   };
 
   // -----------------------------
@@ -105,7 +121,7 @@ export default function HeaderBar() {
           Upload CSV
           <input
             type="file"
-            accept=".csv"
+            accept=".csv,text/csv"
             onChange={handleCsvUpload}
             style={{ display: "none" }}
           />

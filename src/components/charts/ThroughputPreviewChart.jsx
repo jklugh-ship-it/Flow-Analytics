@@ -1,57 +1,84 @@
-// src/components/charts/ThroughputPreviewChart.jsx
+// src/components/ThroughputPreviewChart.jsx
 
-import React from "react";
-import { Line } from "react-chartjs-2";
-
+import React, { useMemo } from "react";
 import {
-  Chart as ChartJS,
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
   Tooltip,
-  Legend
-} from "chart.js";
+  ResponsiveContainer,
+  ReferenceArea
+} from "recharts";
 
-ChartJS.register(
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  Tooltip,
-  Legend
-);
+export default function ThroughputPreviewChart({
+  throughputRun,
+  startDate,
+  endDate
+}) {
+  // -------------------------------------------------------
+  // Stable date values (prevents input flicker)
+  // -------------------------------------------------------
+  const stableStart = useMemo(() => startDate || null, [startDate]);
+  const stableEnd = useMemo(() => endDate || null, [endDate]);
 
-export default function ThroughputPreviewChart({ data }) {
-  if (!data || !data.length) return null;
+  // -------------------------------------------------------
+  // Memoized shading data (CRITICAL FIX)
+  // -------------------------------------------------------
+  const shadedData = useMemo(() => {
+    if (!throughputRun || throughputRun.length === 0) return [];
 
-  const labels = data.map((d) => d.date);
-  const counts = data.map((d) => d.count);
+    return throughputRun.map((d) => {
+      const inRange =
+        stableStart &&
+        stableEnd &&
+        d.date >= stableStart &&
+        d.date <= stableEnd;
 
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: "Daily Throughput",
-        data: counts,
-        borderColor: "rgba(75, 192, 192, 1)",
-        backgroundColor: "rgba(75, 192, 192, 0.3)",
-        tension: 0.2
-      }
-    ]
-  };
+      return {
+        ...d,
+        shaded: inRange
+      };
+    });
+  }, [throughputRun, stableStart, stableEnd]);
 
-  const options = {
-    scales: {
-      x: { title: { display: true, text: "Date" } },
-      y: { title: { display: true, text: "Items Completed" } }
-    }
-  };
+  // -------------------------------------------------------
+  // Compute shaded region boundaries
+  // -------------------------------------------------------
+  const hasRange = stableStart && stableEnd;
 
   return (
-    <div style={{ marginBottom: "2rem" }}>
-      <h3>Throughput Preview</h3>
-      <Line data={chartData} options={options} />
+    <div style={{ width: "100%", height: 250 }}>
+      <ResponsiveContainer>
+        <AreaChart data={shadedData}>
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Tooltip />
+
+          {/* Base throughput line */}
+          <Area
+            type="monotone"
+            dataKey="count"
+            stroke="#2563eb"
+            fill="#93c5fd"
+            fillOpacity={0.3}
+            isAnimationActive={false} // prevents flicker
+          />
+
+          {/* Shaded region */}
+          {hasRange && (
+            <ReferenceArea
+              x1={stableStart}
+              x2={stableEnd}
+              ifOverflow="extendDomain"
+              fill="#2563eb"
+              fillOpacity={0.15}
+              strokeOpacity={0}
+              isAnimationActive={false} // prevents flicker
+            />
+          )}
+        </AreaChart>
+      </ResponsiveContainer>
     </div>
   );
 }

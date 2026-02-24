@@ -1,38 +1,46 @@
+// src/hooks/useMonteCarloWhenHowLong.js
+
+import { useCallback } from "react";
+import { simulateDuration } from "../utils/simulateDuration";
+
 export default function useMonteCarloWhenHowLong({
-  throughputHistory,
-  workflowStates,
+  throughputWindow,
+  fullThroughput,
   targetCount,
   numSimulations,
   setResults,
-  setPercentiles
+  setPercentiles,
+  setFallbackUsed
 }) {
-  return () => {
-    if (!throughputHistory?.length) return;
+  return useCallback(() => {
+    const windowData = Array.isArray(throughputWindow)
+  ? throughputWindow.map(d => d.count)
+  : [];
 
-    const sims = [];
 
-    for (let i = 0; i < numSimulations; i++) {
-      let total = 0;
-      let days = 0;
+    const fullData = fullThroughput.map(d => d.count);
 
-      while (total < targetCount) {
-        const idx = Math.floor(Math.random() * throughputHistory.length);
-        total += throughputHistory[idx];
-        days++;
-      }
+const useWindow =
+  windowData.length >= 5 ? windowData : fullData;
 
-      sims.push(days);
-    }
 
-    sims.sort((a, b) => a - b);
+    setFallbackUsed(windowData.length < 5);
 
-    const pct = {
-      p50: sims[Math.floor(numSimulations * 0.5)],
-      p85: sims[Math.floor(numSimulations * 0.85)],
-      p95: sims[Math.floor(numSimulations * 0.95)]
-    };
+    const { p50, p85, p95, sims } = simulateDuration({
+      throughputSamples: useWindow,
+      targetCount,
+      numSimulations
+    });
 
     setResults(sims);
-    setPercentiles(pct);
-  };
+    setPercentiles({ p50, p85, p95 });
+  }, [
+    throughputWindow,
+    fullThroughput,
+    targetCount,
+    numSimulations,
+    setResults,
+    setPercentiles,
+    setFallbackUsed
+  ]);
 }
