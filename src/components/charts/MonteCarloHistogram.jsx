@@ -1,128 +1,134 @@
-import React from "react";
-import { Bar } from "react-chartjs-2";
-
+import React, { useMemo } from "react";
 import {
-  Chart as ChartJS,
-  BarElement,
-  CategoryScale,
-  LinearScale,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
   Tooltip,
-  Legend
-} from "chart.js";
+  ResponsiveContainer,
+  ReferenceLine
+} from "recharts";
 
-import annotationPlugin from "chartjs-plugin-annotation";
+// Custom tick: label each bin value under the X-axis
+const BinTick = ({ x, y, payload }) => {
+  if (!payload || payload.value === undefined) return null;
 
-ChartJS.register(
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  Tooltip,
-  Legend,
-  annotationPlugin
-);
+  return (
+    <text
+      x={x}
+      y={y + 12}
+      textAnchor="middle"
+      fill="#374151"
+      fontSize={12}
+    >
+      {payload.value}
+    </text>
+  );
+};
 
-export default function MonteCarloHistogram({ data, percentiles, xLabel }) {
-  if (!data || !data.length) return null;
+export default function MonteCarloHistogram({ results }) {
+  // -------------------------------------------------------
+  // Build histogram buckets: { value: number, count: number }
+  // -------------------------------------------------------
+  const histogram = useMemo(() => {
+    if (!results || results.length === 0) return [];
 
-  // Convert raw results into frequency buckets
-  const freq = {};
-  data.forEach((v) => {
-    freq[v] = (freq[v] || 0) + 1;
-  });
-
-  const labels = Object.keys(freq)
-    .map((k) => Number(k))
-    .sort((a, b) => a - b);
-
-  const counts = labels.map((k) => freq[k]);
-
-  const chartData = {
-    labels,
-    datasets: [
-      {
-        label: "Frequency",
-        data: counts,
-        backgroundColor: "rgba(75, 192, 192, 0.6)"
-      }
-    ]
-  };
-
-  // Helper: find the index of a percentile value in the labels array
-  const findIndexForValue = (value) =>
-    labels.findIndex((label) => Number(label) === Number(value));
-
-  // Build annotation lines
-  const annotations = {};
-
-  if (percentiles?.p50 !== undefined) {
-    const idx = findIndexForValue(percentiles.p50);
-    if (idx !== -1) {
-      annotations.p50 = {
-        type: "line",
-        xMin: idx,
-        xMax: idx,
-        borderColor: "#10b981",
-        borderWidth: 2,
-        label: {
-          content: `P50 (${percentiles.p50})`,
-          enabled: true,
-          position: "start"
-        }
-      };
+    const counts = new Map();
+    for (const r of results) {
+      const numeric = Number(r);
+      counts.set(numeric, (counts.get(numeric) || 0) + 1);
     }
-  }
 
-  if (percentiles?.p85 !== undefined) {
-    const idx = findIndexForValue(percentiles.p85);
-    if (idx !== -1) {
-      annotations.p85 = {
-        type: "line",
-        xMin: idx,
-        xMax: idx,
-        borderColor: "#f59e0b",
-        borderWidth: 2,
-        label: {
-          content: `P85 (${percentiles.p85})`,
-          enabled: true,
-          position: "start"
-        }
-      };
-    }
-  }
+    return [...counts.entries()]
+      .map(([value, count]) => ({
+        value: Number(value),
+        count
+      }))
+      .sort((a, b) => a.value - b.value);
+  }, [results]);
 
-  if (percentiles?.p95 !== undefined) {
-    const idx = findIndexForValue(percentiles.p95);
-    if (idx !== -1) {
-      annotations.p95 = {
-        type: "line",
-        xMin: idx,
-        xMax: idx,
-        borderColor: "#ef4444",
-        borderWidth: 2,
-        label: {
-          content: `P95 (${percentiles.p95})`,
-          enabled: true,
-          position: "start"
-        }
-      };
-    }
-  }
+  // Precompute the list of bin values for ticks
+  const binValues = useMemo(
+    () => histogram.map((h) => h.value),
+    [histogram]
+  );
 
-  const options = {
-    scales: {
-      x: {
-        title: { display: true, text: xLabel || "Value" }
-      },
-      y: {
-        title: { display: true, text: "Frequency" }
-      }
-    },
-    plugins: {
-      annotation: {
-        annotations
-      }
-    }
-  };
+  // -------------------------------------------------------
+  // Percentiles (05th, 15th, 50th)
+  // -------------------------------------------------------
+  const percentiles = useMemo(() => {
+    if (!results || results.length === 0) return {};
 
-  return <Bar data={chartData} options={options} />;
+    const sorted = results.map(Number).sort((a, b) => a - b);
+    const pick = (p) => sorted[Math.floor(p * sorted.length)];
+
+    return {
+      p05: pick(0.05),
+      p15: pick(0.15),
+      p50: pick(0.5)
+    };
+  }, [results]);
+
+  // -------------------------------------------------------
+  // Domain padding so 0 isn't on the Y-axis
+  // -------------------------------------------------------
+  const domain = [
+    (dataMin) => (dataMin === 0 ? -0.5 : dataMin - 0.5),
+    (dataMax) => dataMax + 0.5
+  ];
+
+  // -------------------------------------------------------
+  // Render
+  // -------------------------------------------------------
+  return (
+    <div style={{ width: "100%", height: 260 }}>
+      <ResponsiveContainer>
+        <BarChart data={histogram}>
+          <XAxis
+            type="number"
+            dataKey="value"
+            domain={domain}
+            ticks={binValues}      // <- force one tick per bin
+            interval={0}           // <- show all ticks
+            tick={<BinTick />}     // <- custom renderer
+            allowDecimals={false}
+          />
+          <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+          <Tooltip />
+
+          <Bar
+            dataKey="count"
+            fill="#10b981"
+            isAnimationActive={false}
+            barSize={20}
+          />
+
+          {percentiles.p05 !== undefined && (
+            <ReferenceLine
+              x={percentiles.p05}
+              stroke="#7c3aed"
+              strokeDasharray="3 3"
+              label={{ value: "5th", position: "top", fill: "#7c3aed" }}
+            />
+          )}
+          {percentiles.p15 !== undefined && (
+            <ReferenceLine
+              x={percentiles.p15}
+              stroke="#dc2626"
+              strokeDasharray="3 3"
+              label={{ value: "15th", position: "top", fill: "#dc2626" }}
+            />
+          )}
+          {percentiles.p50 !== undefined && (
+            <ReferenceLine
+              x={percentiles.p50}
+              stroke="#2563eb"
+              strokeDasharray="3 3"
+              label={{ value: "50th", position: "top", fill: "#2563eb" }}
+            />
+          )}
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
 }

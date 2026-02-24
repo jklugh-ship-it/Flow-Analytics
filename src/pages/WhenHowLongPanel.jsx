@@ -3,16 +3,8 @@
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloWhenHowLong from "../hooks/useMonteCarloWhenHowLong";
+import WhenHowLongHistogram from "../components/charts/WhenHowLongHistogram";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
-} from "recharts";
 
 export default function WhenHowLongPanel({ throughputWindow }) {
   const fullThroughput = useAnalyticsStore((s) => s.throughputHistory);
@@ -104,7 +96,7 @@ export default function WhenHowLongPanel({ throughputWindow }) {
 
   return (
     <div style={{ padding: "1.5rem" }}>
-      <h2>When / How Long?</h2>
+      <h2>How Long Will It Take?</h2>
 
       {/* Controls */}
       <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
@@ -161,24 +153,24 @@ export default function WhenHowLongPanel({ throughputWindow }) {
 
       {/* Results */}
       <section style={{ marginBottom: "1.5rem" }}>
-        <h3>Results</h3>
+        <h3>Simulation Results</h3>
         {!p50 ? (
           <p>No simulation run yet.</p>
         ) : (
           <ul>
             <li>
               There is a <strong>50%</strong> chance of finishing in{" "}
-              <strong>{p50}</strong> days or fewer
+              <strong>{p50}</strong> or fewer days
               {startDate && endDates ? ` (around ${endDates.p50})` : ""}.
             </li>
             <li>
               There is a <strong>85%</strong> chance of finishing in{" "}
-              <strong>{p85}</strong> days or fewer
+              <strong>{p85}</strong> or fewer days
               {startDate && endDates ? ` (around ${endDates.p85})` : ""}.
             </li>
             <li>
               There is a <strong>95%</strong> chance of finishing in{" "}
-              <strong>{p95}</strong> days or fewer
+              <strong>{p95}</strong> or fewer days
               {startDate && endDates ? ` (around ${endDates.p95})` : ""}.
             </li>
           </ul>
@@ -187,27 +179,10 @@ export default function WhenHowLongPanel({ throughputWindow }) {
 
       {/* Histogram */}
       <section>
-        <h3>Distribution of completion times</h3>
         {histogramData.length === 0 ? (
           <p>No data yet. Run a simulation.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={histogramData}>
-              <XAxis dataKey="value" type="number" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" isAnimationActive={false} />
-              {p50 && (
-                <ReferenceLine x={p50} stroke="green" strokeDasharray="3 3" label="P50" />
-              )}
-              {p85 && (
-                <ReferenceLine x={p85} stroke="orange" strokeDasharray="3 3" label="P85" />
-              )}
-              {p95 && (
-                <ReferenceLine x={p95} stroke="red" strokeDasharray="3 3" label="P95" />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
+          <WhenHowLongHistogram results={results} />
         )}
       </section>
     </div>

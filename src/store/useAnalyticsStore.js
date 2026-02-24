@@ -194,6 +194,22 @@ export const useAnalyticsStore = create((set, get) => ({
   },
 
   // -------------------------------------------------------
+  // DATA WINDOW SETTINGS
+  // -------------------------------------------------------
+windowSettings: {
+  windowStart: null,
+  windowEnd: null,
+  useFullDataset: false
+},
+
+setWindowSettings: (settings) =>
+  set({
+    windowSettings: {
+      ...get().windowSettings,
+      ...settings
+    }
+  }),
+  // -------------------------------------------------------
   // MONTE CARLO — HOW MANY
   // -------------------------------------------------------
   howManyResults: [],
@@ -201,7 +217,7 @@ export const useAnalyticsStore = create((set, get) => ({
   howManySettings: {
     startDate: null,
     endDate: null,
-    simCount: 10000
+    simCount: null
   },
 
   setHowManyResults: (results) => set({ howManyResults: results }),
@@ -220,8 +236,8 @@ export const useAnalyticsStore = create((set, get) => ({
   whenHowLongResults: [],
   whenHowLongPercentiles: {},
   whenHowLongSettings: {
-    targetCount: 10,
-    simCount: 10000
+    targetCount: null,
+    simCount: null
   },
 
   setWhenHowLongResults: (results) => set({ whenHowLongResults: results }),

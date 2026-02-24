@@ -16,15 +16,9 @@ export default function ThroughputPreviewChart({
   startDate,
   endDate
 }) {
-  // -------------------------------------------------------
-  // Stable date values (prevents input flicker)
-  // -------------------------------------------------------
   const stableStart = useMemo(() => startDate || null, [startDate]);
   const stableEnd = useMemo(() => endDate || null, [endDate]);
 
-  // -------------------------------------------------------
-  // Memoized shading data
-  // -------------------------------------------------------
   const shadedData = useMemo(() => {
     if (!throughputRun || throughputRun.length === 0) return [];
 
@@ -42,19 +36,11 @@ export default function ThroughputPreviewChart({
     });
   }, [throughputRun, stableStart, stableEnd]);
 
-  // -------------------------------------------------------
-  // Only shade if BOTH dates are set
-  // -------------------------------------------------------
   const hasRange = Boolean(stableStart && stableEnd);
-
-  // -------------------------------------------------------
-  // First date label for context
-  // -------------------------------------------------------
   const firstDate = throughputRun?.[0]?.date || null;
 
   return (
     <div style={{ width: "100%", height: 260 }}>
-      {/* Contextual start date */}
       {firstDate && (
         <div
           style={{
@@ -69,44 +55,40 @@ export default function ThroughputPreviewChart({
 
       <ResponsiveContainer>
         <AreaChart data={shadedData}>
-          {/* CLEAN X-AXIS: no ticks, no labels, no clutter */}
-        <XAxis
-  dataKey="date"
-  tick={false}
- hide={true}
- axisLine={false}
-  tickLine={false}
-  interval="preserveStart"
-  minTickGap={9999}
-/>
-
+          {/* Match histogram axis language */}
+          <XAxis
+            dataKey="date"
+            tick={false}
+            tickLine={false}
+            axisLine={true}     // <-- match histograms
+          />
 
           <YAxis
             width={30}
             tick={{ fontSize: 12 }}
             axisLine={false}
             tickLine={false}
+            allowDecimals={false}
           />
 
           <Tooltip />
 
-          {/* Base throughput line */}
+          {/* Match histogram color family */}
           <Area
             type="monotone"
             dataKey="count"
-            stroke="#2563eb"
-            fill="#93c5fd"
-            fillOpacity={0.3}
+            stroke="#10b981"     // emerald green (same as histograms)
+            fill="#10b981"
+            fillOpacity={0.25}   // subtle fill
             isAnimationActive={false}
           />
 
-          {/* Shaded region only if both dates are set */}
           {hasRange && (
             <ReferenceArea
               x1={stableStart}
               x2={stableEnd}
               ifOverflow="extendDomain"
-              fill="#2563eb"
+              fill="#10b981"
               fillOpacity={0.15}
               strokeOpacity={0}
               isAnimationActive={false}

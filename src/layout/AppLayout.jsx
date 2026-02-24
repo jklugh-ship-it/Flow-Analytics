@@ -36,6 +36,7 @@ export default function AppLayout({ children }) {
           {/* NEW simplified analytics navigation */}
           <SidebarLink to="/overview">Overview</SidebarLink>
           <SidebarLink to="/forecasts">Forecasts</SidebarLink>
+		  <SidebarLink to="/privacy">Privacy</SidebarLink>
         </nav>
       </aside>
 

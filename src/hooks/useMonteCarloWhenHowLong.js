@@ -3,12 +3,6 @@
 import { useCallback } from "react";
 import { simulateDuration } from "../utils/simulateDuration";
 
-function isMostlyZeros(arr) {
-  if (!arr || arr.length === 0) return false;
-  const nonZero = arr.filter(n => n > 0).length;
-  return nonZero / arr.length < 0.2;
-}
-
 export default function useMonteCarloWhenHowLong({
   throughputWindow,
   fullThroughput,
@@ -17,7 +11,6 @@ export default function useMonteCarloWhenHowLong({
   setResults,
   setPercentiles,
   setFallbackUsed,
-  setZeroWarning // <-- NEW: pass this from the panel
 }) {
   return useCallback(() => {
     const windowData = Array.isArray(throughputWindow)
@@ -30,9 +23,6 @@ export default function useMonteCarloWhenHowLong({
     const useWindow = windowData.length > 0 ? windowData : fullData;
 
     setFallbackUsed(windowData.length === 0);
-
-    // NEW: warn if mostly zeros
-    setZeroWarning(isMostlyZeros(useWindow));
 
     if (useWindow.length === 0) {
       setResults([]);
@@ -56,6 +46,5 @@ export default function useMonteCarloWhenHowLong({
     setResults,
     setPercentiles,
     setFallbackUsed,
-    setZeroWarning
   ]);
 }

@@ -54,11 +54,6 @@ export default function Forecasts() {
     setEndIndex(idx === -1 ? maxIndex : Math.max(idx, startIndex));
   }, [endDateInput, throughputRun, startIndex, maxIndex]);
 
-  // Key handler for Enter
-  const handleKey = (e, commitFn) => {
-    if (e.key === "Enter") commitFn();
-  };
-
   // Filter throughput based on committed window
   const filtered = useMemo(() => {
     if (!throughputRun.length) return [];
@@ -100,61 +95,48 @@ export default function Forecasts() {
         </section>
 
         {/* Date Window Controls */}
-        <section>
-          <h3>Data Window</h3>
+<section>
+  <h3>Data Window</h3>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <label>
-              Start Date
-              <input
-                type="text"
-                placeholder="YYYY-MM-DD"
-                value={startDateInput}
-                onChange={(e) => setStartDateInput(e.target.value)}
-                onBlur={commitStart}
-                onKeyDown={(e) => handleKey(e, commitStart)}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  fontFamily: "monospace"
-                }}
-              />
-            </label>
+  <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
+    <div>
+      <label>Start date</label>
+      <input
+        type="date"
+        value={startDateInput || ""}
+        onChange={(e) => setStartDateInput(e.target.value)}
+        onBlur={commitStart}
+      />
+    </div>
 
-            <label>
-              End Date
-              <input
-                type="text"
-                placeholder="YYYY-MM-DD"
-                value={endDateInput}
-                onChange={(e) => setEndDateInput(e.target.value)}
-                onBlur={commitEnd}
-                onKeyDown={(e) => handleKey(e, commitEnd)}
-                style={{
-                  width: "100%",
-                  padding: "0.5rem",
-                  fontFamily: "monospace"
-                }}
-              />
-            </label>
+    <div>
+      <label>End date</label>
+      <input
+        type="date"
+        value={endDateInput || ""}
+        onChange={(e) => setEndDateInput(e.target.value)}
+        onBlur={commitEnd}
+      />
+    </div>
 
-            <button
-              onClick={resetWindow}
-              style={{
-                marginTop: "1rem",
-                padding: "0.5rem 0.75rem",
-                background: "#6b7280",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: "pointer",
-                width: "100%"
-              }}
-            >
-              Reset to Full Dataset
-            </button>
-          </div>
-        </section>
+    <div style={{ alignSelf: "flex-end" }}>
+  <button
+    onClick={resetWindow}
+    style={{
+      padding: "0.5rem 0.75rem",
+      background: "#6b7280",
+      color: "white",
+      border: "none",
+      borderRadius: "6px",
+      cursor: "pointer"
+    }}
+  >
+    Reset to Full Dataset
+  </button>
+</div>
+
+  </div>
+</section>
       </div>
 
       {/* Bottom Row: Two Panels */}

@@ -3,16 +3,7 @@
 import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloHowMany from "../hooks/useMonteCarloHowMany";
-
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine
-} from "recharts";
+import MonteCarloHistogram from "../components/charts/MonteCarloHistogram";
 
 export default function HowManyPanel({ throughputWindow }) {
   const fullThroughput = useAnalyticsStore((s) => s.throughputHistory);
@@ -176,7 +167,7 @@ export default function HowManyPanel({ throughputWindow }) {
 
       {/* Results */}
       <section style={{ marginBottom: "1.5rem" }}>
-        <h3>Results</h3>
+        <h3>Simulation Results</h3>
         {!p50 ? (
           <p>No simulation run yet.</p>
         ) : (
@@ -199,27 +190,12 @@ export default function HowManyPanel({ throughputWindow }) {
 
       {/* Histogram */}
       <section>
-        <h3>Distribution</h3>
         {histogramData.length === 0 ? (
           <p>No data yet. Run a simulation.</p>
         ) : (
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={histogramData}>
-              <XAxis dataKey="value" type="number" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#3b82f6" isAnimationActive={false} />
-              {p05 && (
-                <ReferenceLine x={p05} stroke="red" strokeDasharray="3 3" label="P05" />
-              )}
-              {p15 && (
-                <ReferenceLine x={p15} stroke="orange" strokeDasharray="3 3" label="P15" />
-              )}
-              {p50 && (
-                <ReferenceLine x={p50} stroke="green" strokeDasharray="3 3" label="P50" />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ width: "100%", height: 260 }}>
+  <MonteCarloHistogram results={results} />
+</div>
         )}
       </section>
     </div>
