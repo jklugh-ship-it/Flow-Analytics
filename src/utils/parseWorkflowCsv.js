@@ -1,5 +1,29 @@
 // src/utils/parseWorkflowCsv.js
 
+import { parseDate } from "./metrics";
+import { useAnalyticsStore } from "../store/useAnalyticsStore";
+
+// -------------------------------------------------------
+// SAFE DATE PARSER (patch)
+// Rejects invalid or extreme dates (e.g., 2205, 2052)
+// -------------------------------------------------------
+function safeParseDate(raw) {
+  if (!raw) return null;
+
+  const dt = parseDate(raw);
+  if (!dt || isNaN(dt.getTime())) return null;
+
+  const year = dt.getFullYear();
+
+  // Reject dates outside a sane range
+  if (year < 1990 || year > 2050) {
+    console.warn(`Dropping out-of-range date: ${raw}`);
+    return null;
+  }
+
+  return dt;
+}
+
 function simpleParseCsv(text) {
   const lines = text.trim().split(/\r?\n/);
   const [headerLine, ...rows] = lines;
@@ -17,44 +41,41 @@ function simpleParseCsv(text) {
   return { headers, data };
 }
 
-function normalizeDate(value) {
-  if (!value || value.trim() === "") return null;
-
-  // Handle ISO YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    const [y, m, d] = value.split("-").map(Number);
-    if (y > 2100) return null; // guard against absurd future dates
-    return new Date(y, m - 1, d).toISOString().slice(0, 10);
-  }
-
-  // Handle MM/DD/YYYY
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-  if (d.getFullYear() > 2100) return null;
-
-  return d.toISOString().slice(0, 10);
+/**
+ * Extract workflow columns from CSV header.
+ * Accepts both:
+ *   entered_StateName
+ *   StateName
+ * and normalizes everything to entered_StateName.
+ */
+function extractWorkflowColumns(headers) {
+  return headers
+    .filter((h) => h !== "id" && h !== "title")
+    .filter((h) => h.startsWith("entered_") || !h.includes("_"))
+    .map((h) => (h.startsWith("entered_") ? h : `entered_${h}`));
 }
 
-/**
- * CSV format:
- * id,title,entered_<State1>,entered_<State2>,...,entered_<StateN>
- *
- * created = earliest non-null workflow date
- * completed = final workflow state's date
- *
- * RETURNS:
- * {
- *   items: [...],
- *   workflowStates: [...],   <-- extracted from CSV header
- *   errors: [...]
- * }
- */
+/** Convert entered_StateName → StateName */
+function displayName(col) {
+  return col.replace(/^entered_/, "");
+}
+
+/** Infer completed date from last non-null workflow state. */
+function inferCompleted(entered) {
+  const states = Object.keys(entered);
+  for (let i = states.length - 1; i >= 0; i--) {
+    const s = states[i];
+    if (entered[s]) return entered[s];
+  }
+  return null;
+}
+
 export function parseWorkflowCsv(csvText) {
   const errors = [];
   const { headers, data } = simpleParseCsv(csvText);
 
   // -------------------------------------------------------
-  // 1. Remove empty rows (all fields blank)
+  // 1. Remove empty rows
   // -------------------------------------------------------
   const cleaned = data.filter((row) =>
     Object.values(row).some((v) => v && v.trim() !== "")
@@ -66,19 +87,7 @@ export function parseWorkflowCsv(csvText) {
   }
 
   // -------------------------------------------------------
-  // 2. Extract workflow states from CSV header
-  // -------------------------------------------------------
-  const workflowStates = headers
-    .filter((h) => h.startsWith("entered_"))
-    .map((h) => h.replace("entered_", ""));
-
-  if (workflowStates.length === 0) {
-    errors.push("No workflow state columns found (expected entered_<StateName>).");
-    return { items: [], workflowStates: [], errors };
-  }
-
-  // -------------------------------------------------------
-  // 3. Validate first two columns
+  // 2. Validate first two columns
   // -------------------------------------------------------
   if (headers[0] !== "id" || headers[1] !== "title") {
     errors.push(`CSV must begin with: id,title`);
@@ -86,34 +95,74 @@ export function parseWorkflowCsv(csvText) {
   }
 
   // -------------------------------------------------------
-  // 4. Normalize each row
+  // 3. Extract workflow columns dynamically
+  // -------------------------------------------------------
+  const workflowColumns = extractWorkflowColumns(headers);
+
+  if (workflowColumns.length === 0) {
+    errors.push(
+      "No workflow state columns found. Expected columns like entered_<State> or <State>."
+    );
+    return { items: [], workflowStates: [], errors };
+  }
+
+  // Display names for UI
+  const workflowStates = workflowColumns.map(displayName);
+
+  // -------------------------------------------------------
+  // 4. Get in-progress states from store (persisted)
+  // -------------------------------------------------------
+  const inProgressStates =
+    useAnalyticsStore.getState().inProgressStates || {};
+
+  // -------------------------------------------------------
+  // 5. Normalize each row
   // -------------------------------------------------------
   const items = cleaned.map((row, index) => {
     const id = row.id ?? "";
     const title = row.title ?? "";
 
     const entered = {};
-    workflowStates.forEach((state) => {
-      const col = `entered_${state}`;
-      entered[state] = normalizeDate(row[col] ?? "");
+
+    workflowColumns.forEach((col) => {
+      const raw =
+        row[col] ?? row[col.replace(/^entered_/, "")] ?? "";
+      entered[col] = safeParseDate(raw); // PATCHED
     });
 
-    // created = earliest non-null workflow date
-    const created =
+    // earliest non-null workflow date
+    const earliest =
       Object.values(entered)
         .filter(Boolean)
-        .sort()[0] || null;
+        .sort((a, b) => a - b)[0] || null;
 
-    // completed = final workflow state's date
-    const finalState = workflowStates[workflowStates.length - 1];
-    const completed = entered[finalState] || null;
+    // completed = last non-null workflow state
+    const completed = inferCompleted(entered);
+
+    // -------------------------------------------------------
+    // Compute cycleStart using hybrid logic:
+    // 1. First in-progress-state date
+    // 2. Otherwise earliest workflow date
+    // -------------------------------------------------------
+    const inProgressDates = workflowStates
+      .filter((s) => inProgressStates[s]) // only in-progress states
+      .map((s) => entered[`entered_${s}`])
+      .filter(Boolean)
+      .sort((a, b) => a - b);
+
+    const cycleStart = inProgressDates[0] || earliest;
+
+    // cycleEnd = completed
+    const cycleEnd = completed;
 
     return {
       id,
       title,
-      created,
+      created: earliest,
       completed,
       entered,
+      cycleStart,
+      cycleEnd,
       _rowIndex: index + 2
     };
   });

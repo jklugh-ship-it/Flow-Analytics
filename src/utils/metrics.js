@@ -7,47 +7,55 @@ export function parseDate(value) {
   // Already a Date
   if (value instanceof Date) return value;
 
-  // Strict ISO YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
-  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-    const d = new Date(value);
+  if (typeof value !== "string") return null;
+
+  const trimmed = value.trim();
+
+  //
+  // 1. ISO: YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
+  //
+  if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) {
+    const d = new Date(trimmed);
+
     if (isNaN(d)) return null;
 
-    // Compare only the date portion to avoid timezone mismatches
-    const iso = d.toISOString().slice(0, 10);
-    const input = value.slice(0, 10);
+    // Extract the date portion from both input and parsed date
+    const inputDate = trimmed.slice(0, 10);
+    const parsedDate = d.toISOString().slice(0, 10);
 
-    return iso === input ? d : null;
+    // Reject rollover or timezone-shifted mismatches
+    if (inputDate !== parsedDate) return null;
+
+    return d; // Keep the Date object as-is (your original behavior)
   }
 
-  // Handle MM/DD/YYYY
-  if (typeof value === "string" && value.includes("/")) {
-    const parts = value.split("/");
-    if (parts.length === 3) {
-      const [m, d, y] = parts.map((p) => parseInt(p, 10));
+  //
+  // 2. US format: M/D/YYYY or MM/DD/YYYY
+  //
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(trimmed)) {
+    const [m, d, y] = trimmed.split("/").map(Number);
 
-      // Basic range checks
-      if (m < 1 || m > 12) return null;
-      if (d < 1 || d > 31) return null;
+    // Basic range checks
+    if (m < 1 || m > 12) return null;
+    if (d < 1 || d > 31) return null;
 
-      const d2 = new Date(y, m - 1, d);
+    // Construct in UTC to avoid timezone drift
+    const date = new Date(Date.UTC(y, m - 1, d));
 
-      // Reject JS auto-normalization
-      if (
-        d2.getFullYear() !== y ||
-        d2.getMonth() !== m - 1 ||
-        d2.getDate() !== d
-      ) {
-        return null;
-      }
-
-      return d2;
+    // Reject rollover (e.g., 2/32/2025 → Mar 3)
+    if (
+      date.getUTCFullYear() !== y ||
+      date.getUTCMonth() !== m - 1 ||
+      date.getUTCDate() !== d
+    ) {
+      return null;
     }
+
+    return date;
   }
 
   return null;
 }
-
-
 export function daysBetween(a, b) {
   if (!a || !b) return null;
   const ms = b - a;
@@ -70,45 +78,27 @@ export function eachDay(start, end) {
 export function formatDate(d) {
   return d.toISOString().split("T")[0];
 }
-
 // ------------------------------------------------------------
 // CFD (Cumulative Flow Diagram)
 // ------------------------------------------------------------
-//
-// New item shape:
-// {
-//   created: "YYYY-MM-DD" | null,
-//   completed: "YYYY-MM-DD" | null,
-//   entered: { [state]: "YYYY-MM-DD" | null }
-// }
-//
-// Output shape (unchanged):
-// [
-//   { date: "2025-01-01", Refinement: 3, Development: 2, Testing: 1, Done: 0 },
-//   ...
-// ]
-//
 export function computeCfd(items, workflowStates) {
   if (!items || items.length === 0) return [];
 
-  // Determine overall date range from entered dates / created / completed
+  // ------------------------------------------------------------
+  // Collect all dates that matter for the CFD timeline
+  // ------------------------------------------------------------
   const allDates = [];
 
   items.forEach((item) => {
-    if (item.created) {
-      const d = parseDate(item.created);
-      if (d) allDates.push(d);
-    }
-    if (item.completed) {
-      const d = parseDate(item.completed);
-      if (d) allDates.push(d);
-    }
+    if (item.created instanceof Date) allDates.push(item.created);
+    if (item.completed instanceof Date) allDates.push(item.completed);
+
     workflowStates.forEach((state) => {
-      const v = item.entered?.[state];
-      if (v) {
-        const d = parseDate(v);
-        if (d) allDates.push(d);
-      }
+      const d =
+        item.entered?.[`entered_${state}`] ??
+        item.entered?.[state];
+
+      if (d instanceof Date) allDates.push(d);
     });
   });
 
@@ -116,17 +106,22 @@ export function computeCfd(items, workflowStates) {
 
   const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
   const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
+
   const days = eachDay(minDate, maxDate);
 
+  // ------------------------------------------------------------
+  // Build CFD rows
+  // ------------------------------------------------------------
   return days.map((day) => {
     const row = { date: formatDate(day) };
 
     workflowStates.forEach((state) => {
       const count = items.filter((item) => {
-        const enteredStr = item.entered?.[state];
-        if (!enteredStr) return false;
-        const enteredDate = parseDate(enteredStr);
-        return enteredDate && enteredDate <= day;
+        const d =
+          item.entered?.[`entered_${state}`] ??
+          item.entered?.[state];
+
+        return d instanceof Date && d <= day;
       }).length;
 
       row[state] = count;
@@ -135,50 +130,56 @@ export function computeCfd(items, workflowStates) {
     return row;
   });
 }
-
 // ------------------------------------------------------------
 // WIP RUN
 // ------------------------------------------------------------
-//
-// Output shape (unchanged):
-// [
-//   { date: "2025-01-01", count: 5 },
-//   ...
-// ]
-//
 export function computeWipRun(items) {
   if (!items || items.length === 0) return [];
 
   const allDates = [];
 
   items.forEach((item) => {
-    if (item.created) {
-      const d = parseDate(item.created);
-      if (d) allDates.push(d);
+    if (item.created instanceof Date) {
+      const d = new Date(item.created);
+      d.setHours(0, 0, 0, 0);
+      allDates.push(d);
     }
-    if (item.completed) {
-      const d = parseDate(item.completed);
-      if (d) allDates.push(d);
+    if (item.completed instanceof Date) {
+      const d = new Date(item.completed);
+      d.setHours(0, 0, 0, 0);
+      allDates.push(d);
     }
   });
 
   if (allDates.length === 0) return [];
 
   const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
-  const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
-  const days = eachDay(minDate, maxDate);
+  minDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const days = eachDay(minDate, today);
 
   return days.map((day) => {
     const count = items.filter((item) => {
-      const start = item.created ? parseDate(item.created) : null;
-      const end = item.completed ? parseDate(item.completed) : null;
-      return start && start <= day && (!end || end > day);
+      if (!(item.created instanceof Date)) return false;
+
+      const start = new Date(item.created);
+      start.setHours(0, 0, 0, 0);
+
+      let end = null;
+      if (item.completed instanceof Date) {
+        end = new Date(item.completed);
+        end.setHours(0, 0, 0, 0);
+      }
+
+      return start <= day && (!end || end > day);
     }).length;
 
     return { date: formatDate(day), count };
   });
 }
-
 // -------------------------------------------------------
 // THROUGHPUT RUN (start at earliest entry date + zero-fill to today)
 // -------------------------------------------------------
@@ -188,9 +189,10 @@ export function computeThroughputRun(items) {
   // 1. Count completions by date
   const counts = {};
   items.forEach((item) => {
-    const done = item.entered?.Done;
-    if (done) {
-      counts[done] = (counts[done] || 0) + 1;
+    const completed = item.completed;
+    if (completed instanceof Date) {
+      const iso = completed.toISOString().slice(0, 10);
+      counts[iso] = (counts[iso] || 0) + 1;
     }
   });
 
@@ -200,14 +202,16 @@ export function computeThroughputRun(items) {
   items.forEach((item) => {
     if (item.entered) {
       Object.values(item.entered).forEach((d) => {
-        if (d) allEntryDates.push(d);
+        if (d instanceof Date) allEntryDates.push(d);
       });
     }
   });
 
   if (allEntryDates.length === 0) return [];
 
-  const firstEntry = new Date(allEntryDates.sort()[0]);
+  const firstEntry = new Date(
+    Math.min(...allEntryDates.map((d) => d.getTime()))
+  );
   firstEntry.setHours(0, 0, 0, 0);
 
   // 3. End at today
@@ -230,33 +234,27 @@ export function computeThroughputRun(items) {
 
   return run;
 }
-
 // ------------------------------------------------------------
 // CYCLE TIME HISTOGRAM
 // ------------------------------------------------------------
-//
-// Output shape (unchanged):
-// [
-//   { value: 3, count: 5 },
-//   ...
-// ]
-//
 export function computeCycleTimeHistogram(items) {
   if (!items || items.length === 0) return [];
 
   const buckets = {};
 
   items.forEach((i) => {
-    if (!i.created || !i.completed) return;
+    const start = i.cycleStart;
+    const end = i.cycleEnd;
 
-    const start = parseDate(i.created);
-    const end = parseDate(i.completed);
     if (!start || !end) return;
 
+    // daysBetween should already normalize to local midnight
     const ct = daysBetween(start, end);
-    if (ct == null) return;
 
-    buckets[ct] = (buckets[ct] || 0) + 1;
+    // eliminate 0-day cycle times
+    const safeCt = Math.max(ct, 1);
+
+    buckets[safeCt] = (buckets[safeCt] || 0) + 1;
   });
 
   return Object.entries(buckets).map(([value, count]) => ({
@@ -269,31 +267,23 @@ export function computeCycleTimeHistogram(items) {
 // ------------------------------------------------------------
 // CYCLE TIME SCATTER
 // ------------------------------------------------------------
-//
-// Output shape (unchanged):
-// [
-//   { date: "2025-01-12", value: 9 },
-//   ...
-// ]
-//
 export function computeCycleTimeScatter(items) {
   if (!items || items.length === 0) return [];
 
   return items
-    .filter((i) => i.created && i.completed)
     .map((i) => {
-      const start = parseDate(i.created);
-      const end = parseDate(i.completed);
+      const start = i.cycleStart;
+      const end = i.cycleEnd;
 
       if (!start || !end) return null;
 
       const ct = daysBetween(start, end);
-      if (ct == null) return null;
+      const safeCt = Math.max(ct, 1);
 
       return {
-        date: i.completed,
-        value: ct
+        date: formatDate(end), // x-axis = completion date
+        value: safeCt          // y-axis = cycle time
       };
     })
-    .filter(Boolean); // remove nulls
+    .filter(Boolean);
 }

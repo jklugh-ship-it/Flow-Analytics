@@ -6,35 +6,40 @@ describe("computeThroughputRun", () => {
     const items = [
       {
         id: 1,
-        created: "2024-01-01",
-        entered: { Done: "2024-01-02" }
+        created: new Date(2024, 0, 1), // Jan 1 2024 local
+        completed: new Date(2024, 0, 2),
+        entered: {
+          Ready: new Date(2024, 0, 1),
+          Accepted: new Date(2024, 0, 2)
+        }
       },
       {
         id: 2,
-        created: "2024-01-01",
-        entered: { Done: "2024-01-03" }
+        created: new Date(2024, 0, 1),
+        completed: new Date(2024, 0, 3),
+        entered: {
+          Ready: new Date(2024, 0, 1),
+          Accepted: new Date(2024, 0, 3)
+        }
       }
     ];
 
     const tp = computeThroughputRun(items);
 
     // --- Expected start date ---
-    const earliestEntry = "2024-01-01";
-
-    expect(tp[0].date).toBe(earliestEntry);
+    expect(tp[0].date).toBe("2024-01-01");
 
     // --- Expected end date ---
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayIso = today.toISOString().slice(0, 10);
-
     expect(tp[tp.length - 1].date).toBe(todayIso);
 
     // --- Validate completion counts dynamically ---
     const completionsByDate = {};
     items.forEach((i) => {
-      const d = i.entered.Done;
-      completionsByDate[d] = (completionsByDate[d] || 0) + 1;
+      const iso = i.completed.toISOString().slice(0, 10);
+      completionsByDate[iso] = (completionsByDate[iso] || 0) + 1;
     });
 
     tp.forEach((row) => {

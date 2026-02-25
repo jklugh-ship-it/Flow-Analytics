@@ -15,12 +15,15 @@ import SortableItem from "./SortableItem";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import DownloadTemplateButton from "./DownloadTemplateButton";
 
-
 export default function WorkflowDesigner() {
   const workflowStates = useAnalyticsStore((s) => s.workflowStates);
   const setWorkflowStates = useAnalyticsStore((s) => s.setWorkflowStates);
+
   const workflowVisibility = useAnalyticsStore((s) => s.workflowVisibility);
   const toggleVisibility = useAnalyticsStore((s) => s.toggleWorkflowVisibility);
+
+  const inProgressStates = useAnalyticsStore((s) => s.inProgressStates);
+  const setInProgressStates = useAnalyticsStore((s) => s.setInProgressStates);
 
   const [newStateName, setNewStateName] = useState("");
   const [mergeSelection, setMergeSelection] = useState([]);
@@ -31,9 +34,6 @@ export default function WorkflowDesigner() {
     })
   );
 
-  // -------------------------------------------------------
-  // DRAG END → reorder workflow states
-  // -------------------------------------------------------
   const handleDragEnd = (event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -45,9 +45,6 @@ export default function WorkflowDesigner() {
     setWorkflowStates(reordered);
   };
 
-  // -------------------------------------------------------
-  // ADD NEW STATE
-  // -------------------------------------------------------
   const handleAddState = () => {
     const name = newStateName.trim();
     if (!name) return;
@@ -61,9 +58,6 @@ export default function WorkflowDesigner() {
     setNewStateName("");
   };
 
-  // -------------------------------------------------------
-  // DELETE STATE
-  // -------------------------------------------------------
   const handleDelete = (state) => {
     if (!window.confirm(`Remove state "${state}"?`)) return;
 
@@ -71,9 +65,6 @@ export default function WorkflowDesigner() {
     setWorkflowStates(updated);
   };
 
-  // -------------------------------------------------------
-  // MERGE STATES
-  // -------------------------------------------------------
   const handleMerge = () => {
     if (mergeSelection.length < 2) {
       alert("Select at least two states to merge");
@@ -103,15 +94,14 @@ export default function WorkflowDesigner() {
     );
   };
 
-  // -------------------------------------------------------
-  // RENDER
-  // -------------------------------------------------------
   return (
     <div style={{ padding: "1rem", border: "1px solid #ddd", borderRadius: 8 }}>
       <h2 style={{ marginBottom: "1rem" }}>Workflow Designer</h2>
-<div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-  <DownloadTemplateButton />
-</div>
+
+      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
+        <DownloadTemplateButton />
+      </div>
+
       {/* ADD NEW STATE */}
       <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
         <input
@@ -162,7 +152,7 @@ export default function WorkflowDesigner() {
                   marginBottom: "0.5rem"
                 }}
               >
-                {/* Merge selection checkbox */}
+                {/* Merge selection */}
                 <input
                   type="checkbox"
                   checked={mergeSelection.includes(state)}
@@ -182,6 +172,21 @@ export default function WorkflowDesigner() {
                   <span style={{ marginLeft: 4 }}>Visible</span>
                 </label>
 
+                {/* In Progress toggle */}
+                <label style={{ display: "flex", alignItems: "center" }}>
+                  <input
+                    type="checkbox"
+                    checked={!!inProgressStates[state]}
+                    onChange={() =>
+                      setInProgressStates({
+                        ...inProgressStates,
+                        [state]: !inProgressStates[state]
+                      })
+                    }
+                  />
+                  <span style={{ marginLeft: 4 }}>In Progress</span>
+                </label>
+
                 {/* Delete */}
                 <button onClick={() => handleDelete(state)}>Delete</button>
               </div>
@@ -191,5 +196,4 @@ export default function WorkflowDesigner() {
       </DndContext>
     </div>
   );
- 
 }
