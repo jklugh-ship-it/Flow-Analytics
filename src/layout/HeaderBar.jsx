@@ -5,6 +5,14 @@ import { useLocation } from "react-router-dom";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import { parseWorkflowCsv } from "../utils/parseWorkflowCsv";
 
+// Helper you can call from anywhere (e.g., LandingPage)
+export function triggerHeaderCsvUpload() {
+  const input = document.getElementById("header-csv-input");
+  if (input) {
+    input.click();
+  }
+}
+
 export default function HeaderBar() {
   const location = useLocation();
 
@@ -120,6 +128,7 @@ export default function HeaderBar() {
         >
           Upload CSV
           <input
+            id="header-csv-input"
             type="file"
             accept=".csv,text/csv"
             onChange={handleCsvUpload}
