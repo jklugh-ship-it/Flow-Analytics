@@ -7,22 +7,46 @@ export function parseDate(value) {
   // Already a Date
   if (value instanceof Date) return value;
 
-  // Native parse (handles ISO, RFC, etc.)
-  const d1 = new Date(value);
-  if (!isNaN(d1)) return d1;
+  // Strict ISO YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss.sssZ
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const d = new Date(value);
+    if (isNaN(d)) return null;
+
+    // Compare only the date portion to avoid timezone mismatches
+    const iso = d.toISOString().slice(0, 10);
+    const input = value.slice(0, 10);
+
+    return iso === input ? d : null;
+  }
 
   // Handle MM/DD/YYYY
   if (typeof value === "string" && value.includes("/")) {
     const parts = value.split("/");
     if (parts.length === 3) {
       const [m, d, y] = parts.map((p) => parseInt(p, 10));
+
+      // Basic range checks
+      if (m < 1 || m > 12) return null;
+      if (d < 1 || d > 31) return null;
+
       const d2 = new Date(y, m - 1, d);
-      if (!isNaN(d2)) return d2;
+
+      // Reject JS auto-normalization
+      if (
+        d2.getFullYear() !== y ||
+        d2.getMonth() !== m - 1 ||
+        d2.getDate() !== d
+      ) {
+        return null;
+      }
+
+      return d2;
     }
   }
 
   return null;
 }
+
 
 export function daysBetween(a, b) {
   if (!a || !b) return null;
@@ -164,8 +188,9 @@ export function computeThroughputRun(items) {
   // 1. Count completions by date
   const counts = {};
   items.forEach((item) => {
-    if (item.completed) {
-      counts[item.completed] = (counts[item.completed] || 0) + 1;
+    const done = item.entered?.Done;
+    if (done) {
+      counts[done] = (counts[done] || 0) + 1;
     }
   });
 
@@ -217,6 +242,8 @@ export function computeThroughputRun(items) {
 // ]
 //
 export function computeCycleTimeHistogram(items) {
+  if (!items || items.length === 0) return [];
+
   const buckets = {};
 
   items.forEach((i) => {
@@ -238,6 +265,7 @@ export function computeCycleTimeHistogram(items) {
   }));
 }
 
+
 // ------------------------------------------------------------
 // CYCLE TIME SCATTER
 // ------------------------------------------------------------
@@ -249,16 +277,23 @@ export function computeCycleTimeHistogram(items) {
 // ]
 //
 export function computeCycleTimeScatter(items) {
+  if (!items || items.length === 0) return [];
+
   return items
     .filter((i) => i.created && i.completed)
     .map((i) => {
       const start = parseDate(i.created);
       const end = parseDate(i.completed);
+
+      if (!start || !end) return null;
+
       const ct = daysBetween(start, end);
+      if (ct == null) return null;
 
       return {
         date: i.completed,
         value: ct
       };
-    });
+    })
+    .filter(Boolean); // remove nulls
 }

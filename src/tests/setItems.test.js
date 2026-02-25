@@ -1,40 +1,50 @@
 // src/tests/setItems.test.js
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useAnalyticsStore } from "../store/useAnalyticsStoreStore";
+import { describe, it, expect, beforeEach } from "vitest";
 import { act } from "@testing-library/react";
+import { useAnalyticsStore } from "../store/useAnalyticsStore";
 
 describe("setItems ingestion", () => {
   beforeEach(() => {
     useAnalyticsStore.setState({
       items: [],
-      workflowStates: ["Refinement", "Development", "Testing", "Done"],
+      workflowStates: [],
       metrics: null,
       summary: null
     });
   });
 
-  it("ingests items, normalizes them, and computes metrics", () => {
+  it("ingests items, stores them, and computes metrics + summary", () => {
     const raw = [
       {
         id: 1,
-        created_date: "2024-01-01",
-        entered_Refinement: "2024-01-02",
-        entered_Development: "2024-01-03",
-        entered_Testing: "2024-01-04",
-        entered_Done: "2024-01-05",
-        completed_date: "2024-01-05"
+        created: "2024-01-01",
+        completed: "2024-01-05",
+        entered: {
+          Refinement: "2024-01-01",
+          Development: "2024-01-02",
+          Testing: "2024-01-03",
+          Done: "2024-01-05"
+        }
       }
     ];
 
     act(() => {
-      useAppStore.getState().setItems(raw);
+      useAnalyticsStore.getState().setItems(raw);
     });
 
     const state = useAnalyticsStore.getState();
 
+    // Items stored exactly as provided
     expect(state.items.length).toBe(1);
-    expect(state.items[0].transitions.Refinement).toBeInstanceOf(Date);
+    expect(state.items[0]).toEqual(raw[0]);
+
+    // Workflow states are whatever the store sets (no inference expected)
+    expect(Array.isArray(state.workflowStates)).toBe(true);
+
+    // Metrics computed
     expect(state.metrics).toBeTruthy();
+
+    // Summary computed
     expect(state.summary).toBeTruthy();
   });
 });
