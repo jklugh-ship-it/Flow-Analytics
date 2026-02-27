@@ -1,10 +1,9 @@
 // src/utils/parseWorkflowCsv.js
 
 import { parseDate } from "./metrics";
-import { useAnalyticsStore } from "../store/useAnalyticsStore";
 
 // -------------------------------------------------------
-// SAFE DATE PARSER (patch)
+// SAFE DATE PARSER
 // Rejects invalid or extreme dates (e.g., 2205, 2052)
 // -------------------------------------------------------
 function safeParseDate(raw) {
@@ -60,16 +59,6 @@ function displayName(col) {
   return col.replace(/^entered_/, "");
 }
 
-/** Infer completed date from last non-null workflow state. */
-function inferCompleted(entered) {
-  const states = Object.keys(entered);
-  for (let i = states.length - 1; i >= 0; i--) {
-    const s = states[i];
-    if (entered[s]) return entered[s];
-  }
-  return null;
-}
-
 export function parseWorkflowCsv(csvText) {
   const errors = [];
   const { headers, data } = simpleParseCsv(csvText);
@@ -110,14 +99,9 @@ export function parseWorkflowCsv(csvText) {
   const workflowStates = workflowColumns.map(displayName);
 
   // -------------------------------------------------------
-  // 4. Get in-progress states from store (persisted)
-  // -------------------------------------------------------
-  const inProgressStates =
-    useAnalyticsStore.getState().inProgressStates || {};
-
-  // -------------------------------------------------------
-  // 5. Normalize each row
-  // -------------------------------------------------------
+  // 4. Normalize each row
+  //    (No cycleStart/cycleEnd here; strict semantics live in the store)
+// -------------------------------------------------------
   const items = cleaned.map((row, index) => {
     const id = row.id ?? "";
     const title = row.title ?? "";
@@ -125,9 +109,8 @@ export function parseWorkflowCsv(csvText) {
     const entered = {};
 
     workflowColumns.forEach((col) => {
-      const raw =
-        row[col] ?? row[col.replace(/^entered_/, "")] ?? "";
-      entered[col] = safeParseDate(raw); // PATCHED
+      const raw = row[col] ?? row[col.replace(/^entered_/, "")] ?? "";
+      entered[col] = safeParseDate(raw);
     });
 
     // earliest non-null workflow date
@@ -137,23 +120,9 @@ export function parseWorkflowCsv(csvText) {
         .sort((a, b) => a - b)[0] || null;
 
     // completed = last non-null workflow state
-    const completed = inferCompleted(entered);
+    const finalCol = workflowColumns[workflowColumns.length - 1];
+	const completed = entered[finalCol] || null;
 
-    // -------------------------------------------------------
-    // Compute cycleStart using hybrid logic:
-    // 1. First in-progress-state date
-    // 2. Otherwise earliest workflow date
-    // -------------------------------------------------------
-    const inProgressDates = workflowStates
-      .filter((s) => inProgressStates[s]) // only in-progress states
-      .map((s) => entered[`entered_${s}`])
-      .filter(Boolean)
-      .sort((a, b) => a - b);
-
-    const cycleStart = inProgressDates[0] || earliest;
-
-    // cycleEnd = completed
-    const cycleEnd = completed;
 
     return {
       id,
@@ -161,8 +130,6 @@ export function parseWorkflowCsv(csvText) {
       created: earliest,
       completed,
       entered,
-      cycleStart,
-      cycleEnd,
       _rowIndex: index + 2
     };
   });

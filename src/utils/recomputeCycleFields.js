@@ -1,28 +1,39 @@
+// src/utils/recomputeCycleFields.js
+
+function normalizeToUtcDateOnly(dt) {
+  if (!dt) return null;
+  return new Date(Date.UTC(
+    dt.getUTCFullYear(),
+    dt.getUTCMonth(),
+    dt.getUTCDate()
+  ));
+}
+
 export function recomputeCycleFields(items, inProgressStates, workflowStates) {
   return items.map((item) => {
-    const dates = item.workflowDates || {};
+    const entered = item.entered || {};
 
-    // Find first in-progress state date
-    const inProgressDates = workflowStates
-      .filter((s) => inProgressStates[s])
-      .map((s) => dates[s])
-      .filter(Boolean);
+    const finalState = workflowStates[workflowStates.length - 1];
+	const rawCycleEnd = entered[`entered_${finalState}`] || null;
 
-    const cycleStart =
-      inProgressDates.length > 0
-        ? new Date(Math.min(...inProgressDates.map((d) => new Date(d))))
-        : new Date(
-            Math.min(
-              ...Object.values(dates).map((d) => new Date(d))
-            )
-          );
 
-    const cycleEnd = dates["Done"] || dates["Resolved"] || null;
+    const firstInProgressState = workflowStates.find(
+      (s) => inProgressStates && inProgressStates[s]
+    );
+
+    let rawCycleStart = null;
+    if (firstInProgressState) {
+      rawCycleStart = entered[`entered_${firstInProgressState}`] || null;
+    }
+
+    const cycleStart = normalizeToUtcDateOnly(rawCycleStart);
+    const cycleEnd = normalizeToUtcDateOnly(rawCycleEnd);
 
     return {
       ...item,
       cycleStart,
-      cycleEnd
+      cycleEnd,
+      completed: !!cycleEnd
     };
   });
 }

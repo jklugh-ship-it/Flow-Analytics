@@ -186,12 +186,13 @@ export function computeWipRun(items) {
 export function computeThroughputRun(items) {
   if (!items || items.length === 0) return [];
 
-  // 1. Count completions by date
+  // 1. Count completions by UTC date (cycleEnd is authoritative)
   const counts = {};
   items.forEach((item) => {
-    const completed = item.completed;
-    if (completed instanceof Date) {
-      const iso = completed.toISOString().slice(0, 10);
+    const end = item.cycleEnd;
+    if (end instanceof Date) {
+      // Extract UTC date (YYYY-MM-DD)
+      const iso = end.toISOString().slice(0, 10);
       counts[iso] = (counts[iso] || 0) + 1;
     }
   });
@@ -209,14 +210,18 @@ export function computeThroughputRun(items) {
 
   if (allEntryDates.length === 0) return [];
 
+  // Normalize earliest entry to UTC midnight
   const firstEntry = new Date(
-    Math.min(...allEntryDates.map((d) => d.getTime()))
+    Date.UTC(
+      allEntryDates[0].getUTCFullYear(),
+      allEntryDates[0].getUTCMonth(),
+      allEntryDates[0].getUTCDate()
+    )
   );
-  firstEntry.setHours(0, 0, 0, 0);
 
-  // 3. End at today
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // 3. End at today (UTC midnight)
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   // 4. Build continuous timeline with zero-fill
   const run = [];
@@ -229,7 +234,12 @@ export function computeThroughputRun(items) {
       count: counts[iso] || 0
     });
 
-    cursor.setDate(cursor.getDate() + 1);
+    // Advance by 1 day (UTC)
+    cursor = new Date(Date.UTC(
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate() + 1
+    ));
   }
 
   return run;
@@ -286,4 +296,93 @@ export function computeCycleTimeScatter(items) {
       };
     })
     .filter(Boolean);
+}
+// ------------------------------------------------------------
+// CYCLE TIME (DAYS) — PURE UTILITY
+// ------------------------------------------------------------
+export function computeCycleTimeDays(item) {
+  if (!(item.cycleStart instanceof Date)) return null;
+  if (!(item.cycleEnd instanceof Date)) return null;
+
+  const ms = item.cycleEnd.getTime() - item.cycleStart.getTime();
+  return Math.floor(ms / (24 * 60 * 60 * 1000)) + 1; // inclusive
+}
+
+function percentile(sorted, p) {
+  if (sorted.length === 0) return null;
+  const idx = (p / 100) * (sorted.length - 1);
+  const lower = Math.floor(idx);
+  const upper = Math.ceil(idx);
+  if (lower === upper) return sorted[lower];
+  const w = idx - lower;
+  return Math.round(sorted[lower] * (1 - w) + sorted[upper] * w);
+}
+
+// ------------------------------------------------------------
+// CYCLE TIME PERCENTILES (50, 70, 85, 95)
+// ------------------------------------------------------------
+export function computeCycleTimePercentiles(items) {
+  const values = items
+    .map(computeCycleTimeDays)
+    .filter((v) => typeof v === "number")
+    .sort((a, b) => a - b);
+
+  return {
+    p50: percentile(values, 50),
+    p70: percentile(values, 70),
+    p85: percentile(values, 85),
+    p95: percentile(values, 95)
+  };
+}
+
+// ------------------------------------------------------------
+// CURRENT WORKFLOW STATE (LAST ENTERED STATE)
+// ------------------------------------------------------------
+export function getCurrentState(item, workflowStates) {
+  const entered = item.entered || {};
+  let lastState = null;
+
+  workflowStates.forEach((state) => {
+    const d =
+      entered[`entered_${state}`] ??
+      entered[state];
+
+    if (d instanceof Date) {
+      lastState = state;
+    }
+  });
+
+  return lastState;
+}
+
+// ------------------------------------------------------------
+// AGING WIP (ONLY IN-PROGRESS ITEMS)
+// ------------------------------------------------------------
+export function computeAgingWip(items, workflowStates) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  const points = [];
+
+  items.forEach((item) => {
+    // Must have started
+    if (!(item.cycleStart instanceof Date)) return;
+
+    // Must NOT be completed
+    if (item.cycleEnd instanceof Date) return;
+
+    const currentState = getCurrentState(item, workflowStates);
+    if (!currentState) return;
+
+    const ageMs = today.getTime() - item.cycleStart.getTime();
+    const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000)) + 1;
+
+    points.push({
+      id: item.id,
+      state: currentState,
+      ageDays
+    });
+  });
+
+  return points;
 }

@@ -1,3 +1,5 @@
+// src/components/WorkflowDesigner.jsx
+
 import React, { useState } from "react";
 import {
   DndContext,
@@ -23,7 +25,9 @@ export default function WorkflowDesigner() {
   const toggleVisibility = useAnalyticsStore((s) => s.toggleWorkflowVisibility);
 
   const inProgressStates = useAnalyticsStore((s) => s.inProgressStates);
-  const setInProgressStates = useAnalyticsStore((s) => s.setInProgressStates);
+  const toggleInProgressState = useAnalyticsStore(
+    (s) => s.toggleInProgressState
+  );
 
   const [newStateName, setNewStateName] = useState("");
   const [mergeSelection, setMergeSelection] = useState([]);
@@ -177,12 +181,7 @@ export default function WorkflowDesigner() {
                   <input
                     type="checkbox"
                     checked={!!inProgressStates[state]}
-                    onChange={() =>
-                      setInProgressStates({
-                        ...inProgressStates,
-                        [state]: !inProgressStates[state]
-                      })
-                    }
+                    onChange={() => toggleInProgressState(state)}
                   />
                   <span style={{ marginLeft: 4 }}>In Progress</span>
                 </label>

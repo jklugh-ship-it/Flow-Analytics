@@ -1,8 +1,9 @@
 import React from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
+import WorkflowFlowGraphic from "../components/WorkflowFlowGraphic";
+import CfdChart from "../components/charts/CfdChart";
+import AgingWipChart from "../components/charts/AgingWipChart";
 import {
-  AreaChart,
-  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -16,11 +17,22 @@ import {
 } from "recharts";
 
 export default function Overview() {
-  const metrics = useAnalyticsStore((s) => s.metrics);
-  const workflowStates = useAnalyticsStore((s) => s.workflowStates);
+const {
+  metrics,
+  workflowStates,
+  workflowVisibility,
+  inProgressStates
+} = useAnalyticsStore();
 
-  const { cfd, wipRun, throughputRun, cycleHistogram, cycleTimeScatter } =
-    metrics;
+const {
+  cfd,
+  wipRun,
+  throughputRun,
+  cycleHistogram,
+  cycleTimeScatter,
+  agingWip,
+  cycleTimePercentiles
+} = metrics;
 
   return (
     <div style={{ padding: "1.5rem" }}>
@@ -37,48 +49,32 @@ export default function Overview() {
         }}
       >
         <h3 style={{ marginTop: 0 }}>Workflow</h3>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {workflowStates.map((s, idx) => (
-            <div
-              key={s}
-              style={{
-                padding: "0.4rem 0.75rem",
-                borderRadius: "999px",
-                background: `hsl(${idx * 60}, 70%, 85%)`,
-                border: "1px solid #ccc",
-                fontWeight: 500
-              }}
-            >
-              {s}
-            </div>
-          ))}
-        </div>
+       <WorkflowFlowGraphic
+  workflowStates={workflowStates}
+  workflowVisibility={workflowVisibility}
+  inProgressStates={inProgressStates}
+/>
+
       </section>
 
       {/* CFD */}
       <section style={{ marginBottom: "2rem" }}>
-        <h3>Cumulative Flow Diagram</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={cfd}>
-            <XAxis dataKey="date" />
-            <YAxis />
-            <Tooltip />
-            {Object.keys(cfd[0] || {})
-              .filter((k) => k !== "date")
-              .map((state, idx) => (
-                <Area
-                  key={state}
-                  type="monotone"
-                  dataKey={state}
-                  stackId="1"
-                  stroke="#000"
-                  fillOpacity={0.6}
-                  fill={`hsl(${idx * 60}, 70%, 60%)`}
-                />
-              ))}
-          </AreaChart>
-        </ResponsiveContainer>
+  <CfdChart
+    data={cfd}
+    workflowOrder={workflowStates}
+    workflowVisibility={workflowVisibility}
+  />
+</section>
+      {/* Aging WIP */}
+      <section style={{ marginBottom: "2rem" }}>
+        <AgingWipChart
+          agingWip={agingWip}
+          workflowStates={workflowStates}
+          workflowVisibility={workflowVisibility}
+          cycleTimePercentiles={cycleTimePercentiles}
+        />
       </section>
+
 
       {/* WIP + Throughput */}
       <div

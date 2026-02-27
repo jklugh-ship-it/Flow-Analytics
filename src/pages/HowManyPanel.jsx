@@ -173,16 +173,16 @@ export default function HowManyPanel({ throughputWindow }) {
         ) : (
           <ul>
             <li>
-              There is a <strong>95%</strong> chance of completing at least{" "}
-              <strong>{p05}</strong> items.
+              There is a <strong>95%</strong> chance of completing {" "}
+              <strong>{p05}</strong> or more items.
             </li>
             <li>
-              There is a <strong>85%</strong> chance of completing at least{" "}
-              <strong>{p15}</strong> items.
+              There is a <strong>85%</strong> chance of completing {" "}
+              <strong>{p15}</strong> or more  items.
             </li>
             <li>
-              There is a <strong>50%</strong> chance of completing at least{" "}
-              <strong>{p50}</strong> items.
+              There is a <strong>50%</strong> chance of completing {" "}
+              <strong>{p50}</strong> or more  items.
             </li>
           </ul>
         )}

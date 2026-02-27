@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
@@ -7,7 +6,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    include: ["src/**/*.{test,spec}.{js,jsx}"],
-    setupFiles: "./src/tests/setup.js"
+    coverage: {
+      enabled: true,
+	  provider: "v8",
+      reporter: ["text", "html"],
+      reportsDirectory: "./coverage"
+    }
   }
 });
