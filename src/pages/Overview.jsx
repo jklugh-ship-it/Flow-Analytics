@@ -3,6 +3,11 @@ import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import WorkflowFlowGraphic from "../components/WorkflowFlowGraphic";
 import CfdChart from "../components/charts/CfdChart";
 import AgingWipChart from "../components/charts/AgingWipChart";
+
+import CycleTime from "../components/CycleTime";
+import Wip from "../components/Wip";
+import Stability from "../components/Stability";
+
 import {
   XAxis,
   YAxis,
@@ -17,54 +22,66 @@ import {
 } from "recharts";
 
 export default function Overview() {
-const {
-  metrics,
-  workflowStates,
-  workflowVisibility,
-  inProgressStates
-} = useAnalyticsStore();
+  const {
+    metrics,
+    workflowStates,
+    workflowVisibility,
+    inProgressStates
+  } = useAnalyticsStore();
 
-const {
-  cfd,
-  wipRun,
-  throughputRun,
-  cycleHistogram,
-  cycleTimeScatter,
-  agingWip,
-  cycleTimePercentiles
-} = metrics;
+  const {
+    cfd,
+    wipRun,
+    throughputRun,
+    cycleHistogram,
+    cycleTimeScatter,
+    agingWip,
+    cycleTimePercentiles,
+    wipItems,
+    wipStateCounts,
+    stability
+  } = metrics;
 
   return (
     <div style={{ padding: "1.5rem" }}>
       <h1 style={{ marginBottom: "1.5rem" }}>Overview</h1>
 
       {/* WORKFLOW CONTEXT GRAPHIC */}
-      <section
-        style={{
-          marginBottom: "2rem",
-          padding: "1rem",
-          border: "1px solid #ddd",
-          borderRadius: "8px",
-          background: "#fafafa"
-        }}
-      >
+      <section style={{ marginBottom: "2rem" }}>
         <h3 style={{ marginTop: 0 }}>Workflow</h3>
-       <WorkflowFlowGraphic
-  workflowStates={workflowStates}
-  workflowVisibility={workflowVisibility}
-  inProgressStates={inProgressStates}
-/>
+        <WorkflowFlowGraphic
+          workflowStates={workflowStates}
+          workflowVisibility={workflowVisibility}
+          inProgressStates={inProgressStates}
+        />
+      </section>
 
+      {/* NEW METRIC COMPONENTS */}
+      <section style={{ marginBottom: "2rem" }}>
+        <CycleTime percentiles={cycleTimePercentiles} />
+      </section>
+
+      <section style={{ marginBottom: "2rem" }}>
+        <Wip wipItems={wipItems} stateCounts={wipStateCounts} />
+      </section>
+
+      <section style={{ marginBottom: "2rem" }}>
+        <Stability
+          today={stability.today}
+          lastWeek={stability.lastWeek}
+          lastMonth={stability.lastMonth}
+        />
       </section>
 
       {/* CFD */}
       <section style={{ marginBottom: "2rem" }}>
-  <CfdChart
-    data={cfd}
-    workflowOrder={workflowStates}
-    workflowVisibility={workflowVisibility}
-  />
-</section>
+        <CfdChart
+          data={cfd}
+          workflowOrder={workflowStates}
+          workflowVisibility={workflowVisibility}
+        />
+      </section>
+
       {/* Aging WIP */}
       <section style={{ marginBottom: "2rem" }}>
         <AgingWipChart
@@ -74,7 +91,6 @@ const {
           cycleTimePercentiles={cycleTimePercentiles}
         />
       </section>
-
 
       {/* WIP + Throughput */}
       <div

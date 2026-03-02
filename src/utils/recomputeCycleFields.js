@@ -1,5 +1,3 @@
-// src/utils/recomputeCycleFields.js
-
 function normalizeToUtcDateOnly(dt) {
   if (!dt) return null;
   return new Date(Date.UTC(
@@ -14,8 +12,7 @@ export function recomputeCycleFields(items, inProgressStates, workflowStates) {
     const entered = item.entered || {};
 
     const finalState = workflowStates[workflowStates.length - 1];
-	const rawCycleEnd = entered[`entered_${finalState}`] || null;
-
+    const rawCycleEnd = entered[`entered_${finalState}`] || null;
 
     const firstInProgressState = workflowStates.find(
       (s) => inProgressStates && inProgressStates[s]
@@ -31,6 +28,7 @@ export function recomputeCycleFields(items, inProgressStates, workflowStates) {
 
     return {
       ...item,
+      ...entered,     // ← flatten the workflow dates
       cycleStart,
       cycleEnd,
       completed: !!cycleEnd

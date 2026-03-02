@@ -2,132 +2,37 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
+import { computeDefaultInProgress } from "../utils/workflow/computeDefaultInProgress";
+import { normalizeVisibility } from "../utils/workflow/normalizeVisibility";
 import {
-  computeCfd,
-  computeWipRun,
-  computeThroughputRun,
-  computeCycleTimeHistogram,
-  computeCycleTimeScatter,
-  computeAgingWip,
-  computeCycleTimePercentiles
-} from "../utils/metrics";
-import { recomputeCycleFields } from "../utils/recomputeCycleFields";
+  addWorkflowState as addWorkflowStateFn,
+  deleteWorkflowState as deleteWorkflowStateFn,
+  mergeWorkflowStates as mergeWorkflowStatesFn
+} from "../utils/workflow/workflowMutations";
 
-
-// -------------------------------------------------------
-// Default in-progress pattern based on workflow position
-// -------------------------------------------------------
-function computeDefaultInProgress(states) {
-  const result = {};
-  if (states.length === 0) return result;
-
-  states.forEach((s, idx) => {
-    if (idx === 0 || idx === states.length - 1) {
-      result[s] = false; // first + last = waiting/done
-    } else {
-      result[s] = true; // middle states = working
-    }
-  });
-
-  return result;
-}
-
-// -------------------------------------------------------
-// Compute metrics from items (pure functions)
-// -------------------------------------------------------
-function computeAllMetricsPure(items, workflowStates) {
-  const cfd = computeCfd(items, workflowStates);
-  const wipRun = computeWipRun(items);
-  const throughputRun = computeThroughputRun(items);
-  const cycleHistogram = computeCycleTimeHistogram(items);
-  const cycleTimeScatter = computeCycleTimeScatter(items);
-  const agingWip = computeAgingWip(items, workflowStates);
-  const cycleTimePercentiles = computeCycleTimePercentiles(items);
-
-  const throughputHistory = throughputRun.map((d) => d.count);
-
-  return {
-    metrics: {
-      cfd,
-      wipRun,
-      throughputRun,
-      cycleHistogram,
-      cycleTimeScatter,
-      agingWip,
-      cycleTimePercentiles
-    },
-    throughputHistory
-  };
-}
-
-
-// -------------------------------------------------------
-// Compute summary from items (pure functions)
-// -------------------------------------------------------
-function computeSummaryPure(items, metrics) {
-  const completed = items.filter((i) => i.completed).length;
-
-  const avgCycle =
-    metrics.cycleHistogram.length > 0
-      ? Math.round(
-          metrics.cycleHistogram.reduce(
-            (sum, d) => sum + d.value * d.count,
-            0
-          ) /
-            metrics.cycleHistogram.reduce(
-              (sum, d) => sum + d.count,
-              0
-            )
-        )
-      : 0;
-
-  const avgThroughput =
-    metrics.throughputRun.length > 0
-      ? Math.round(
-          metrics.throughputRun.reduce(
-            (sum, d) => sum + d.count,
-            0
-          ) / metrics.throughputRun.length
-        )
-      : 0;
-
-  return {
-    totalItems: items.length,
-    completedItems: completed,
-    avgCycleTime: avgCycle,
-    avgThroughput
-  };
-}
+// UPDATED PATH — now points to the modularized recomputeEverything
+import { recomputeEverything } from "../utils/recompute/recomputeEverything";
 
 export const useAnalyticsStore = create(
   persist(
     (set, get) => ({
-      // -------------------------------------------------------
-      // WORKFLOW STATE (CSV is authoritative)
-      // -------------------------------------------------------
+      // WORKFLOW CONFIGURATION
       workflowStates: [],
-
       workflowVisibility: {},
-
-      // User has explicitly customized in-progress states at least once
+      inProgressStates: {},
       hasUserCustomizedInProgress: false,
+
+      // RAW ITEMS (already normalized by parseWorkflowCsv)
+      items: [],
 
       setWorkflowStates: (states) => {
         const prev = get();
 
-        // Visibility normalization
-        const visibility = { ...prev.workflowVisibility };
-        states.forEach((s) => {
-          if (!(s in visibility)) visibility[s] = true;
-        });
-        Object.keys(visibility).forEach((s) => {
-          if (!states.includes(s)) delete visibility[s];
-        });
-
-        // Default in-progress pattern
+        const visibility = normalizeVisibility(prev.workflowVisibility, states);
         const inProgress = computeDefaultInProgress(states);
 
-        // Alert for 2-state workflow (no working states)
+        // Warn for 2-state workflow with no working states
         const anyInProgress = Object.values(inProgress).some(Boolean);
         if (!anyInProgress && states.length === 2) {
           alert(
@@ -138,144 +43,76 @@ export const useAnalyticsStore = create(
           );
         }
 
-        // Atomic recomputation
-        set((s) => {
-          const itemsWithCycle = recomputeCycleFields(
-            s.items,
-            inProgress,
-            states
-          );
-
-          const { metrics, throughputHistory } = computeAllMetricsPure(
-            itemsWithCycle,
-            states
-          );
-          const summary = computeSummaryPure(itemsWithCycle, metrics);
-
-          return {
-            workflowStates: states,
-            workflowVisibility: visibility,
-            inProgressStates: inProgress,
-            hasUserCustomizedInProgress: s.hasUserCustomizedInProgress,
-            items: itemsWithCycle,
-            metrics,
-            throughputHistory,
-            summary
-          };
+        set({
+          workflowStates: states,
+          workflowVisibility: visibility,
+          inProgressStates: inProgress,
+          hasUserCustomizedInProgress: prev.hasUserCustomizedInProgress
         });
+
+        recomputeEverything(get, set);
       },
 
-      toggleWorkflowVisibility: (stateName) =>
-        set((prev) => ({
+      toggleWorkflowVisibility: (stateName) => {
+        const prev = get();
+        set({
           workflowVisibility: {
             ...prev.workflowVisibility,
             [stateName]: !prev.workflowVisibility[stateName]
           }
-        })),
+        });
+      },
 
       addWorkflowState: (name) => {
-        const { workflowStates, setWorkflowStates } = get();
-        setWorkflowStates([...workflowStates, name]);
+        const updated = addWorkflowStateFn(get().workflowStates, name);
+        get().setWorkflowStates(updated);
       },
 
       deleteWorkflowState: (name) => {
-        const { workflowStates, setWorkflowStates } = get();
-        const updated = workflowStates.filter((s) => s !== name);
-        setWorkflowStates(updated);
+        const updated = deleteWorkflowStateFn(get().workflowStates, name);
+        get().setWorkflowStates(updated);
       },
 
       mergeWorkflowStates: (names, newName) => {
-        const { workflowStates, setWorkflowStates } = get();
-        const updated = workflowStates
-          .filter((s) => !names.includes(s))
-          .concat(newName);
-        setWorkflowStates(updated);
+        const updated = mergeWorkflowStatesFn(get().workflowStates, names, newName);
+        get().setWorkflowStates(updated);
       },
 
-      // -------------------------------------------------------
-      // IN-PROGRESS WORKFLOW STATES (user-defined, persisted)
-      // -------------------------------------------------------
-      inProgressStates: {},
+      toggleInProgressState: (stateName) => {
+        const prev = get();
+        const updated = {
+          ...prev.inProgressStates,
+          [stateName]: !prev.inProgressStates[stateName]
+        };
 
-      toggleInProgressState: (state) => {
-        set((s) => {
-          const updated = {
-            ...s.inProgressStates,
-            [state]: !s.inProgressStates[state]
-          };
-
-          const itemsWithCycle = recomputeCycleFields(
-            s.items,
-            updated,
-            s.workflowStates
-          );
-
-          const { metrics, throughputHistory } = computeAllMetricsPure(
-            itemsWithCycle,
-            s.workflowStates
-          );
-          const summary = computeSummaryPure(itemsWithCycle, metrics);
-
-          return {
-            inProgressStates: updated,
-            hasUserCustomizedInProgress: true,
-            items: itemsWithCycle,
-            metrics,
-            throughputHistory,
-            summary
-          };
+        set({
+          inProgressStates: updated,
+          hasUserCustomizedInProgress: true
         });
+
+        recomputeEverything(get, set);
       },
 
-      // -------------------------------------------------------
       // CSV METADATA
-      // -------------------------------------------------------
       uploadedFileName: null,
       setUploadedFileName: (name) => set({ uploadedFileName: name }),
 
-      // -------------------------------------------------------
-      // RAW ITEMS (already normalized by parseWorkflowCsv)
-      // -------------------------------------------------------
-      items: [],
-
-      setItems: (items) => {
-        const { workflowStates, inProgressStates } = get();
-
-        set(() => {
-          const itemsWithCycle = recomputeCycleFields(
-            items,
-            inProgressStates,
-            workflowStates
-          );
-
-          const { metrics, throughputHistory } = computeAllMetricsPure(
-            itemsWithCycle,
-            workflowStates
-          );
-          const summary = computeSummaryPure(itemsWithCycle, metrics);
-
-          return {
-            items: itemsWithCycle,
-            metrics,
-            throughputHistory,
-            summary,
-            howManyResults: [],
-            howManyPercentiles: {},
-            whenHowLongResults: [],
-            whenHowLongPercentiles: {}
-          };
-        });
-      },
-
-      // -------------------------------------------------------
-      // METRICS + SUMMARY (no longer called directly)
-      // -------------------------------------------------------
+      // METRICS + SUMMARY (computed, not user-set)
       metrics: {
         cfd: [],
         wipRun: [],
         throughputRun: [],
         cycleHistogram: [],
-        cycleTimeScatter: []
+        cycleTimeScatter: [],
+        agingWip: [],
+        cycleTimePercentiles: {},
+        wipItems: [],
+        wipStateCounts: {},
+        stability: {
+			today: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+			lastWeek: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+			lastMonth: { arrivalRate: 0, throughput: 0, wipAge: 0 }
+			}
       },
 
       throughputHistory: [],
@@ -287,9 +124,12 @@ export const useAnalyticsStore = create(
         avgThroughput: 0
       },
 
-      // -------------------------------------------------------
+      setItems: (items) => {
+        set({ items });
+        recomputeEverything(get, set);
+      },
+
       // DATA WINDOW SETTINGS
-      // -------------------------------------------------------
       windowSettings: {
         windowStart: null,
         windowEnd: null,
@@ -304,9 +144,7 @@ export const useAnalyticsStore = create(
           }
         }),
 
-      // -------------------------------------------------------
       // MONTE CARLO — HOW MANY
-      // -------------------------------------------------------
       howManyResults: [],
       howManyPercentiles: {},
       howManySettings: {
@@ -325,9 +163,7 @@ export const useAnalyticsStore = create(
           }
         }),
 
-      // -------------------------------------------------------
       // MONTE CARLO — WHEN / HOW LONG
-      // -------------------------------------------------------
       whenHowLongResults: [],
       whenHowLongPercentiles: {},
       whenHowLongSettings: {
@@ -347,9 +183,7 @@ export const useAnalyticsStore = create(
           }
         }),
 
-      // -------------------------------------------------------
       // RESET STORE
-      // -------------------------------------------------------
       resetStore: () =>
         set({
           items: [],
@@ -359,8 +193,11 @@ export const useAnalyticsStore = create(
             throughputRun: [],
             cycleHistogram: [],
             cycleTimeScatter: [],
-			agingWip: [],
-			cycleTimePercentiles: {}
+            agingWip: [],
+            cycleTimePercentiles: {},
+            wipItems: [],
+            wipStateCounts: {},
+            stability: undefined
           },
           throughputHistory: [],
           summary: {
@@ -370,17 +207,12 @@ export const useAnalyticsStore = create(
             avgThroughput: 0
           },
           uploadedFileName: null,
-
           howManyResults: [],
           howManyPercentiles: {},
           whenHowLongResults: [],
           whenHowLongPercentiles: {}
         })
     }),
-
-    // -------------------------------------------------------
-    // PERSISTENCE CONFIG (C1)
-    // -------------------------------------------------------
     {
       name: "analytics-store",
       partialize: (state) => ({
