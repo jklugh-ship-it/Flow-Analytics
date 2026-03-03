@@ -14,8 +14,8 @@ export function computeWipRun(items) {
       d.setHours(0, 0, 0, 0);
       allDates.push(d);
     }
-    if (item.completed instanceof Date) {
-      const d = new Date(item.completed);
+    if (item.cycleEnd instanceof Date) {
+      const d = new Date(item.cycleEnd);
       d.setHours(0, 0, 0, 0);
       allDates.push(d);
     }
@@ -39,8 +39,8 @@ export function computeWipRun(items) {
       start.setHours(0, 0, 0, 0);
 
       let end = null;
-      if (item.completed instanceof Date) {
-        end = new Date(item.completed);
+      if (item.cycleEnd instanceof Date) {
+        end = new Date(item.cycleEnd);
         end.setHours(0, 0, 0, 0);
       }
 

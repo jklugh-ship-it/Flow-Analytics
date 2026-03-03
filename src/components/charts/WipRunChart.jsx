@@ -1,18 +1,24 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip
+} from "recharts";
 
-export default function ThroughputRunChart({ data }) {
-  if (!data || !data.length) return <div>No throughput data</div>;
+export default function WipRunChart({ data }) {
   return (
     <div>
-      <h3>Throughput Run Chart</h3>
-      <ResponsiveContainer width="100%" height={250}>
+      <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>WIP Over Time</h3>
+
+      <ResponsiveContainer width="100%" height={350}>
         <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="date" />
-          <YAxis allowDecimals={false} />
+          <YAxis />
           <Tooltip />
-          <Line type="monotone" dataKey="count" stroke="#8884d8" dot={false} />
+          <Line type="monotone" dataKey="count" stroke="#2563eb" />
         </LineChart>
       </ResponsiveContainer>
     </div>

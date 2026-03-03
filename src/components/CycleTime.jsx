@@ -7,9 +7,17 @@ export default function CycleTime({ percentiles }) {
   return (
     <div className="metric-block">
       <p>
-        95% of items were completed in <strong>{p95}</strong> days or less,
-        85% of items were completed in <strong>{p85}</strong> days or less,
-        and 50% of items were completed in <strong>{p50}</strong> days or less.
+        <strong>95%</strong> 
+		<br />of items were completed in 
+		<br /><strong>{p95} days or less</strong>
+        <br />
+		<br /><strong>85%</strong> 
+		<br />of items were completed in 
+		<br /><strong>{p85} days or less</strong> 
+        <br />
+		<br /><strong>50%</strong>
+		<br />of items were completed in 
+		<br /><strong>{p50} days or less</strong> 
       </p>
     </div>
   );

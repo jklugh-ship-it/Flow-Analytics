@@ -1,19 +1,25 @@
 import React from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip
+} from "recharts";
 
 export default function ThroughputRunChart({ data }) {
-  if (!data || !data.length) return <div>No throughput data</div>;
   return (
     <div>
-      <h3>Throughput Run Chart</h3>
-      <ResponsiveContainer width="100%" height={250}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
+      <h3 style={{ marginTop: 0, marginBottom: "1rem" }}>Throughput Over Time</h3>
+
+      <ResponsiveContainer width="100%" height={350}>
+        <BarChart data={data}>
           <XAxis dataKey="date" />
-          <YAxis allowDecimals={false} />
+          <YAxis />
           <Tooltip />
-          <Line type="monotone" dataKey="count" stroke="#8884d8" dot={false} />
-        </LineChart>
+          <Bar dataKey="count" fill="#10b981" />
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );

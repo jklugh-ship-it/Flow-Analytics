@@ -6,6 +6,11 @@ import WorkflowPage from "./pages/WorkflowPage";
 import Overview from "./pages/Overview";
 import Forecasts from "./pages/Forecasts";
 import Privacy from "./pages/Privacy";
+import CfdPage from "./pages/charts/CfdPage";
+import WipPage from "./pages/charts/WipPage";
+import ThroughputPage from "./pages/charts/ThroughputPage";
+import CycleTimePage from "./pages/charts/CycleTimePage";
+import MonteCarloPage from "./pages/charts/MonteCarloPage";
 
 export default function App() {
   return (
@@ -16,6 +21,11 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/workflow" element={<WorkflowPage />} />
           <Route path="/overview" element={<Overview />} />
+		  <Route path="/charts/cfd" element={<CfdPage />} />
+		  <Route path="/charts/wip" element={<WipPage />} />
+		  <Route path="/charts/throughput" element={<ThroughputPage />} />
+		  <Route path="/charts/cycle-time" element={<CycleTimePage />} />
+		  <Route path="/charts/monte-carlo" element={<MonteCarloPage />} />
           <Route path="/forecasts" element={<Forecasts />} />
 		  <Route path="/privacy" element={<Privacy />} />
 

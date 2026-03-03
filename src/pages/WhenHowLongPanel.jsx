@@ -4,6 +4,7 @@ import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloWhenHowLong from "../hooks/useMonteCarloWhenHowLong";
 import WhenHowLongHistogram from "../components/charts/WhenHowLongHistogram";
+import PrimaryButton from "../components/PrimaryButton";
 
 
 export default function WhenHowLongPanel({ throughputWindow }) {
@@ -101,7 +102,7 @@ export default function WhenHowLongPanel({ throughputWindow }) {
       {/* Controls */}
       <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         <div>
-          <label>Target count</label>
+          <label>Target count: </label>
           <input
             type="number"
             min={1}
@@ -112,7 +113,7 @@ export default function WhenHowLongPanel({ throughputWindow }) {
           />
         </div>
         <div>
-          <label>Simulations</label>
+          <label>Simulations: </label>
           <input
             type="number"
             min={100}
@@ -123,7 +124,7 @@ export default function WhenHowLongPanel({ throughputWindow }) {
           />
         </div>
         <div>
-          <label>Start date (optional)</label>
+          <label>Start date (optional): </label>
           <input
             type="date"
             value={startDate || ""}
@@ -133,9 +134,7 @@ export default function WhenHowLongPanel({ throughputWindow }) {
           />
         </div>
         <div style={{ alignSelf: "flex-end" }}>
-          <button onClick={handleRun} disabled={!!guardrailMessage}>
-            Run Simulation
-          </button>
+          <PrimaryButton onClick={handleRun}>Run Simulation</PrimaryButton>
         </div>
       </section>
 

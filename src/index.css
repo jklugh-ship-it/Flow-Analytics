@@ -17,3 +17,28 @@ html, body {
   width: 100%;
   height: 100%;
 }
+.metric-block {
+  text-align: center;
+}
+.wip-block {
+  text-align: left;
+}
+
+.wip-states {
+  margin-top: 0.5rem;
+}
+
+.wip-state-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  font-size: 0.9rem;
+}
+
+.wip-state-name {
+  color: #444;
+}
+
+.wip-state-count {
+  font-weight: 600;
+}

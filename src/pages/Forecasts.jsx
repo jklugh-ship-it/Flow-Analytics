@@ -5,6 +5,7 @@ import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import HowManyPanel from "./HowManyPanel";
 import WhenHowLongPanel from "./WhenHowLongPanel";
 import ThroughputPreviewChart from "../components/charts/ThroughputPreviewChart";
+import PrimaryButton from "../components/PrimaryButton";
 
 export default function Forecasts() {
   const throughputRun = useAnalyticsStore((s) => s.metrics.throughputRun);
@@ -100,7 +101,7 @@ export default function Forecasts() {
 
   <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
     <div>
-      <label>Start date</label>
+      <label>Start date: </label>
       <input
         type="date"
         value={startDateInput || ""}
@@ -110,7 +111,7 @@ export default function Forecasts() {
     </div>
 
     <div>
-      <label>End date</label>
+      <label>End date: </label>
       <input
         type="date"
         value={endDateInput || ""}
@@ -120,19 +121,7 @@ export default function Forecasts() {
     </div>
 
     <div style={{ alignSelf: "flex-end" }}>
-  <button
-    onClick={resetWindow}
-    style={{
-      padding: "0.5rem 0.75rem",
-      background: "#6b7280",
-      color: "white",
-      border: "none",
-      borderRadius: "6px",
-      cursor: "pointer"
-    }}
-  >
-    Reset to Full Dataset
-  </button>
+  <PrimaryButton onClick={resetWindow}>Reset to Full Dataset</PrimaryButton>
 </div>
 
   </div>

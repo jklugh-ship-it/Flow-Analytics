@@ -4,36 +4,53 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import { parseWorkflowCsv } from "../utils/parseWorkflowCsv";
+import PrimaryButton from"../components/PrimaryButton";
 
-// Helper you can call from anywhere (e.g., LandingPage)
+// External trigger for LandingPage or other components
 export function triggerHeaderCsvUpload() {
   const input = document.getElementById("header-csv-input");
-  if (input) {
-    input.click();
-  }
+  if (input) input.click();
 }
 
 export default function HeaderBar() {
   const location = useLocation();
 
+// ---Upload Button Styling---
+const uploadButtonStyle = {
+  background: "#2563eb",
+  color: "white",
+  padding: "0.5rem 1rem",
+  borderRadius: "6px",
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  height: "40px",
+  fontSize: "0.95rem",
+  fontWeight: 500,
+  lineHeight: 1,
+  fontFamily: "inherit",
+  appearance: "none",
+  WebkitAppearance: "none"
+};
+
   // Store actions
-  const setItems = useAnalyticsStore((s) => s.setItems);
-  const setWorkflowStates = useAnalyticsStore((s) => s.setWorkflowStates);
-  const workflowStates = useAnalyticsStore((s) => s.workflowStates);
-  const resetStore = useAnalyticsStore((s) => s.resetStore);
+  const {
+    setItems,
+    setWorkflowStates,
+    resetStore,
+    uploadedFileName,
+    setUploadedFileName
+  } = useAnalyticsStore();
 
-  // CSV filename
-  const uploadedFileName = useAnalyticsStore((s) => s.uploadedFileName);
-  const setUploadedFileName = useAnalyticsStore((s) => s.setUploadedFileName);
-
-  // Map routes to human-friendly titles
+  // Route → Title mapping (aligned with new chart pages)
   const titles = {
     "/": "Home",
     "/workflow": "Workflow Designer",
     "/analytics/overview": "Overview",
     "/analytics/cfd": "Cumulative Flow Diagram",
-    "/analytics/wip": "WIP Run Chart",
-    "/analytics/throughput": "Throughput Run Chart",
+    "/analytics/wip": "Work in Progress",
+    "/analytics/throughput": "Throughput Run",
     "/analytics/cycle": "Cycle Time",
     "/analytics/montecarlo": "Monte Carlo Forecasting",
     "/analytics/montecarlo/howmany": "Monte Carlo – How Many",
@@ -51,7 +68,6 @@ export default function HeaderBar() {
 
     const text = await file.text();
 
-    // Parse CSV using the new ingestion pipeline
     const { items, workflowStates: detectedStates, errors } = parseWorkflowCsv(text);
 
     if (errors.length > 0) {
@@ -71,14 +87,6 @@ export default function HeaderBar() {
 
     // Allow re-upload of same file
     e.target.value = "";
-  };
-
-  // -----------------------------
-  // ACTION: Save Workflow
-  // -----------------------------
-  const saveWorkflow = () => {
-    localStorage.setItem("workflowStates", JSON.stringify(workflowStates));
-    alert("Workflow saved");
   };
 
   // -----------------------------
@@ -103,6 +111,7 @@ export default function HeaderBar() {
         zIndex: 10
       }}
     >
+      {/* LEFT SIDE: Title + Data Status */}
       <div>
         <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 600 }}>
           {title}
@@ -115,56 +124,23 @@ export default function HeaderBar() {
         </div>
       </div>
 
+      {/* RIGHT SIDE: Global Actions */}
       <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
         {/* Upload CSV */}
-        <label
-          style={{
-            background: "#2563eb",
-            color: "white",
-            padding: "0.5rem 1rem",
-            borderRadius: "6px",
-            cursor: "pointer"
-          }}
-        >
-          Upload CSV
-          <input
-            id="header-csv-input"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={handleCsvUpload}
-            style={{ display: "none" }}
-          />
-        </label>
+        <label style={uploadButtonStyle}>
+  Upload CSV
+  <input
+    id="header-csv-input"
+    type="file"
+    accept=".csv,text/csv"
+    onChange={handleCsvUpload}
+    style={{ display: "none" }}
+  />
+</label>
 
-        {/* Save Workflow */}
-        <button
-          onClick={saveWorkflow}
-          style={{
-            background: "#4b5563",
-            color: "white",
-            padding: "0.5rem 1rem",
-            borderRadius: "6px",
-            border: "none",
-            cursor: "pointer"
-          }}
-        >
-          Save Workflow
-        </button>
 
         {/* Reset Data */}
-        <button
-          onClick={resetData}
-          style={{
-            background: "#dc2626",
-            color: "white",
-            padding: "0.5rem 1rem",
-            borderRadius: "6px",
-            border: "none",
-            cursor: "pointer"
-          }}
-        >
-          Reset Data
-        </button>
+        <PrimaryButton onClick={resetData}>Reset Data</PrimaryButton>
       </div>
     </header>
   );

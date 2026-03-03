@@ -4,6 +4,7 @@ import React, { useMemo, useEffect, useCallback, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloHowMany from "../hooks/useMonteCarloHowMany";
 import MonteCarloHistogram from "../components/charts/MonteCarloHistogram";
+import PrimaryButton from "../components/PrimaryButton";
 
 export default function HowManyPanel({ throughputWindow }) {
   const fullThroughput = useAnalyticsStore((s) => s.throughputHistory);
@@ -116,7 +117,7 @@ export default function HowManyPanel({ throughputWindow }) {
       {/* Controls */}
       <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
         <div>
-          <label>Start date</label>
+          <label>Start date: </label>
           <input
             type="date"
             value={startDate || ""}
@@ -126,7 +127,7 @@ export default function HowManyPanel({ throughputWindow }) {
           />
         </div>
         <div>
-          <label>End date</label>
+          <label>End date: </label>
           <input
             type="date"
             value={endDate || ""}
@@ -136,7 +137,7 @@ export default function HowManyPanel({ throughputWindow }) {
           />
         </div>
         <div>
-          <label>Simulations</label>
+          <label>Simulations: </label>
           <input
             type="number"
             min={100}
@@ -147,9 +148,7 @@ export default function HowManyPanel({ throughputWindow }) {
           />
         </div>
         <div style={{ alignSelf: "flex-end" }}>
-          <button onClick={handleRun} disabled={!!guardrailMessage}>
-            Run Simulation
-          </button>
+          <PrimaryButton onClick={handleRun}>Run Simulation</PrimaryButton>
         </div>
       </section>
 

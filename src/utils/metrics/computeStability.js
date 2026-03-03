@@ -2,7 +2,7 @@
 
 import { computeArrivalRate } from "./computeArrivalRate";
 import { computeThroughput } from "./computeThroughput";
-import { computeWipAge } from "./computeWipAge";
+import { computeHistoricalWipAge } from "./computeHistoricalWipAge";
 
 export function computeStability(items, inProgressStates, today) {
   const end = new Date(today);
@@ -13,22 +13,26 @@ export function computeStability(items, inProgressStates, today) {
 
   const startLastWeek = new Date(end - 7 * oneDay);
   const startLastMonth = new Date(end - 30 * oneDay);
+  
+  const endToday = end;
+  const endLastWeek = new Date(end - 7 * oneDay);
+  const endLastMonth = new Date(end - 30 * oneDay);
 
   return {
     today: {
       arrivalRate: computeArrivalRate(items, startToday, end),
       throughput: computeThroughput(items, startToday, end),
-      wipAge: computeWipAge(items, inProgressStates, end)
+      wipAge: computeHistoricalWipAge(items, inProgressStates, endToday)
     },
     lastWeek: {
       arrivalRate: computeArrivalRate(items, startLastWeek, end),
       throughput: computeThroughput(items, startLastWeek, end),
-      wipAge: computeWipAge(items, inProgressStates, end)
+      wipAge: computeHistoricalWipAge(items, inProgressStates, endLastWeek)
     },
     lastMonth: {
       arrivalRate: computeArrivalRate(items, startLastMonth, end),
       throughput: computeThroughput(items, startLastMonth, end),
-      wipAge: computeWipAge(items, inProgressStates, end)
+      wipAge: computeHistoricalWipAge(items, inProgressStates, endLastMonth)
     }
   };
 }

@@ -22,15 +22,47 @@ export function computeAllMetrics(items, workflowStates, inProgressStates) {
   const agingWip = computeAgingWip(items, workflowStates);
   const cycleTimePercentiles = computeCycleTimePercentiles(items);
 
-  const wipItems = items.filter((i) =>
-    inProgressStates.includes(i.currentState)
-  );
+  // --- FIXED WIP SELECTOR ---
+  const wipItems = items.filter((item) => {
+    // Must not be completed
+    if (item.cycleEnd !== null) return false;
 
-  const wipStateCounts = wipItems.reduce((acc, item) => {
-    const s = item.currentState;
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {});
+    // Must have entered at least one in-progress state
+    return inProgressStates.some(
+      (state) => item[`entered_${state}`] instanceof Date
+    );
+  });
+
+  // Derive current state from latest entered_<state> timestamp
+  function getCurrentState(item, workflowStates) {
+  let latestState = null;
+  let latestDate = null;
+
+  for (const state of workflowStates) {
+    const d = item[`entered_${state}`];
+    if (d instanceof Date) {
+      if (!latestDate || d > latestDate) {
+        latestDate = d;
+        latestState = state;
+      }
+    }
+  }
+
+  return latestState;
+  }
+
+  // Ordered WIP state counts
+  const wipStateCounts = {};
+  for (const state of workflowStates) {
+  wipStateCounts[state] = 0;
+  }
+
+  for (const item of wipItems) {
+  const state = getCurrentState(item, workflowStates);
+  if (state) {
+    wipStateCounts[state] += 1;
+  }
+  }
 
   const stability = computeStability(
     items,

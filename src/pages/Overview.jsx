@@ -1,25 +1,9 @@
 import React from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import WorkflowFlowGraphic from "../components/WorkflowFlowGraphic";
-import CfdChart from "../components/charts/CfdChart";
-import AgingWipChart from "../components/charts/AgingWipChart";
-
 import CycleTime from "../components/CycleTime";
 import Wip from "../components/Wip";
 import Stability from "../components/Stability";
-
-import {
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  ScatterChart,
-  Scatter
-} from "recharts";
 
 export default function Overview() {
   const {
@@ -30,12 +14,6 @@ export default function Overview() {
   } = useAnalyticsStore();
 
   const {
-    cfd,
-    wipRun,
-    throughputRun,
-    cycleHistogram,
-    cycleTimeScatter,
-    agingWip,
     cycleTimePercentiles,
     wipItems,
     wipStateCounts,
@@ -49,115 +27,89 @@ export default function Overview() {
       {/* WORKFLOW CONTEXT GRAPHIC */}
       <section style={{ marginBottom: "2rem" }}>
         <h3 style={{ marginTop: 0 }}>Workflow</h3>
-        <WorkflowFlowGraphic
-          workflowStates={workflowStates}
-          workflowVisibility={workflowVisibility}
-          inProgressStates={inProgressStates}
-        />
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%"
+          }}
+        >
+          <div style={{ display: "inline-block" }}>
+            <WorkflowFlowGraphic
+              workflowStates={workflowStates}
+              workflowVisibility={workflowVisibility}
+              inProgressStates={inProgressStates}
+            />
+          </div>
+        </div>
       </section>
 
-      {/* NEW METRIC COMPONENTS */}
-      <section style={{ marginBottom: "2rem" }}>
-        <CycleTime percentiles={cycleTimePercentiles} />
-      </section>
-
-      <section style={{ marginBottom: "2rem" }}>
-        <Wip wipItems={wipItems} stateCounts={wipStateCounts} />
-      </section>
-
-      <section style={{ marginBottom: "2rem" }}>
-        <Stability
-          today={stability.today}
-          lastWeek={stability.lastWeek}
-          lastMonth={stability.lastMonth}
-        />
-      </section>
-
-      {/* CFD */}
-      <section style={{ marginBottom: "2rem" }}>
-        <CfdChart
-          data={cfd}
-          workflowOrder={workflowStates}
-          workflowVisibility={workflowVisibility}
-        />
-      </section>
-
-      {/* Aging WIP */}
-      <section style={{ marginBottom: "2rem" }}>
-        <AgingWipChart
-          agingWip={agingWip}
-          workflowStates={workflowStates}
-          workflowVisibility={workflowVisibility}
-          cycleTimePercentiles={cycleTimePercentiles}
-        />
-      </section>
-
-      {/* WIP + Throughput */}
-      <div
+      {/* SUMMARY METRICS: Cycle Time / WIP / Stability */}
+      <section
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
           gap: "2rem",
-          marginBottom: "2rem"
+          marginBottom: "2rem",
+          alignItems: "start"
         }}
       >
-        <section>
-          <h3>WIP Run</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={wipRun}>
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="count" stroke="#2563eb" />
-            </LineChart>
-          </ResponsiveContainer>
-        </section>
+        {/* Cycle Time */}
+        <div style={{ borderRadius: "8px" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
+            Cycle Time
+          </h3>
 
-        <section>
-          <h3>Throughput Run</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={throughputRun}>
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#10b981" />
-            </BarChart>
-          </ResponsiveContainer>
-        </section>
-      </div>
+          <div
+            style={{
+              padding: "1rem",
+              display: "flex",
+              justifyContent: "center"
+            }}
+          >
+            <CycleTime percentiles={cycleTimePercentiles} />
+          </div>
+        </div>
 
-      {/* Cycle Time Charts */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "2rem"
-        }}
-      >
-        <section>
-          <h3>Cycle Time Histogram</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={cycleHistogram}>
-              <XAxis dataKey="value" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="count" fill="#f59e0b" />
-            </BarChart>
-          </ResponsiveContainer>
-        </section>
+        {/* Current WIP */}
+        <div style={{ borderRadius: "8px" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
+            Current WIP
+          </h3>
 
-        <section>
-          <h3>Cycle Time Scatterplot</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <ScatterChart>
-              <XAxis dataKey="date" name="Completed" />
-              <YAxis dataKey="value" name="Cycle Time" />
-              <Tooltip />
-              <Scatter data={cycleTimeScatter} fill="#ef4444" />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </section>
-      </div>
+          <div
+            style={{
+              padding: "1rem",
+              display: "flex",
+              justifyContent: "center"
+            }}
+          >
+            <Wip wipItems={wipItems} stateCounts={wipStateCounts} />
+          </div>
+        </div>
+
+        {/* Stability */}
+        <div style={{ borderRadius: "8px" }}>
+          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
+            Stability
+          </h3>
+
+          <div
+            style={{
+              padding: "1rem",
+              display: "flex",
+              justifyContent: "center"
+            }}
+          >
+            <Stability
+              today={stability.today}
+              lastWeek={stability.lastWeek}
+              lastMonth={stability.lastMonth}
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
