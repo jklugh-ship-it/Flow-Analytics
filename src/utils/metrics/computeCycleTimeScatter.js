@@ -1,25 +1,31 @@
-// src/utils/metrics/computeCycleTimeScatter.js
-
+import { parseDate } from "../date/parseDate";
 import { daysBetween } from "../date/daysBetween";
 import { formatDate } from "./formatDate";
 
 export function computeCycleTimeScatter(items) {
   if (!items || items.length === 0) return [];
 
-  return items
-    .map((i) => {
-      const start = i.cycleStart;
-      const end = i.cycleEnd;
+  const points = [];
 
-      if (!start || !end) return null;
+  items.forEach((i) => {
+    const rawStart = i.cycleStart;
+    const rawEnd = i.cycleEnd;
 
-      const ct = daysBetween(start, end);
-      const safeCt = Math.max(ct, 1);
+    if (!rawStart || !rawEnd) return;
 
-      return {
-        date: formatDate(end), // x-axis = completion date
-        value: safeCt          // y-axis = cycle time
-      };
-    })
-    .filter(Boolean);
+    const start = parseDate(rawStart);
+    const end = parseDate(rawEnd);
+
+    if (!start || !end) return;
+
+    const ct = daysBetween(start, end);
+    if (ct == null || Number.isNaN(ct)) return;
+
+    points.push({
+      date: formatDate(end),
+      value: ct
+    });
+  });
+
+  return points;
 }

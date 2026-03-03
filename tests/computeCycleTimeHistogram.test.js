@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
-import {
-  computeCycleTimeHistogram,
-  parseDate,
-  daysBetween
-} from "../utils/metrics";
+import { computeCycleTimeHistogram } from "../src/utils/metrics/computeCycleTimeHistogram";
+import { parseDate } from "../src/utils/date/parseDate";
+import { daysBetween } from "../src/utils/date/daysBetween";
 
 describe("computeCycleTimeHistogram", () => {
   it("returns an empty array when no items are provided", () => {
@@ -13,18 +11,9 @@ describe("computeCycleTimeHistogram", () => {
 
   it("buckets items by whole-day cycle time", () => {
     const items = [
-      {
-        created: "2024-01-01",
-        completed: "2024-01-05" // CT = 4
-      },
-      {
-        created: "2024-01-02",
-        completed: "2024-01-05" // CT = 3
-      },
-      {
-        created: "2024-01-03",
-        completed: "2024-01-05" // CT = 2
-      }
+      { cycleStart: "2024-01-01", cycleEnd: "2024-01-05" }, // CT = 4
+      { cycleStart: "2024-01-02", cycleEnd: "2024-01-05" }, // CT = 3
+      { cycleStart: "2024-01-03", cycleEnd: "2024-01-05" }  // CT = 2
     ];
 
     const hist = computeCycleTimeHistogram(items);
@@ -32,7 +21,7 @@ describe("computeCycleTimeHistogram", () => {
     // Build expected dynamically
     const expectedBuckets = {};
     items.forEach((i) => {
-      const ct = daysBetween(parseDate(i.created), parseDate(i.completed));
+      const ct = daysBetween(parseDate(i.cycleStart), parseDate(i.cycleEnd));
       expectedBuckets[ct] = (expectedBuckets[ct] || 0) + 1;
     });
 
@@ -46,9 +35,9 @@ describe("computeCycleTimeHistogram", () => {
 
   it("groups multiple items with the same cycle time into the same bucket", () => {
     const items = [
-      { created: "2024-01-01", completed: "2024-01-04" }, // CT = 3
-      { created: "2024-01-02", completed: "2024-01-05" }, // CT = 3
-      { created: "2024-01-03", completed: "2024-01-06" }  // CT = 3
+      { cycleStart: "2024-01-01", cycleEnd: "2024-01-04" }, // CT = 3
+      { cycleStart: "2024-01-02", cycleEnd: "2024-01-05" }, // CT = 3
+      { cycleStart: "2024-01-03", cycleEnd: "2024-01-06" }  // CT = 3
     ];
 
     const hist = computeCycleTimeHistogram(items);
@@ -57,12 +46,12 @@ describe("computeCycleTimeHistogram", () => {
     expect(hist[0]).toEqual({ value: 3, count: 3 });
   });
 
-  it("ignores items missing created or completed dates", () => {
+  it("ignores items missing cycleStart or cycleEnd", () => {
     const items = [
-      { created: "2024-01-01", completed: "2024-01-05" }, // valid
-      { created: "2024-01-02", completed: null },         // ignored
-      { created: null, completed: "2024-01-05" },         // ignored
-      { created: null, completed: null }                  // ignored
+      { cycleStart: "2024-01-01", cycleEnd: "2024-01-05" }, // valid
+      { cycleStart: "2024-01-02", cycleEnd: null },         // ignored
+      { cycleStart: null, cycleEnd: "2024-01-05" },         // ignored
+      { cycleStart: null, cycleEnd: null }                  // ignored
     ];
 
     const hist = computeCycleTimeHistogram(items);
@@ -73,9 +62,9 @@ describe("computeCycleTimeHistogram", () => {
 
   it("ignores items with invalid dates", () => {
     const items = [
-      { created: "2024-01-01", completed: "2024-01-05" }, // valid
-      { created: "not-a-date", completed: "2024-01-05" }, // invalid
-      { created: "2024-01-01", completed: "2024-99-99" }  // invalid
+      { cycleStart: "2024-01-01", cycleEnd: "2024-01-05" }, // valid
+      { cycleStart: "not-a-date", cycleEnd: "2024-01-05" }, // invalid
+      { cycleStart: "2024-01-01", cycleEnd: "2024-99-99" }  // invalid
     ];
 
     const hist = computeCycleTimeHistogram(items);

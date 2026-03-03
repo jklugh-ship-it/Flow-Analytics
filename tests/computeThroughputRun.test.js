@@ -1,44 +1,46 @@
 import { describe, it, expect } from "vitest";
-import { computeThroughputRun } from "../utils/metrics";
+import { computeThroughputRun } from "../src/utils/metrics/computeThroughputRun";
+import { parseDate } from "../src/utils/date/parseDate";
+import { formatDate } from "../src/utils/metrics/formatDate";
 
 describe("computeThroughputRun", () => {
   it("computes throughput per day from earliest entry date to today", () => {
     const items = [
       {
         id: 1,
-        created: new Date(2024, 0, 1), // Jan 1 2024 local
-        completed: new Date(2024, 0, 2),
+        cycleStart: "2024-01-01",
+        cycleEnd: "2024-01-02",
         entered: {
-          Ready: new Date(2024, 0, 1),
-          Accepted: new Date(2024, 0, 2)
+          Ready: "2024-01-01",
+          Accepted: "2024-01-02"
         }
       },
       {
         id: 2,
-        created: new Date(2024, 0, 1),
-        completed: new Date(2024, 0, 3),
+        cycleStart: "2024-01-01",
+        cycleEnd: "2024-01-03",
         entered: {
-          Ready: new Date(2024, 0, 1),
-          Accepted: new Date(2024, 0, 3)
+          Ready: "2024-01-01",
+          Accepted: "2024-01-03"
         }
       }
     ];
 
     const tp = computeThroughputRun(items);
 
-    // --- Expected start date ---
+    // --- Expected start date (earliest entry across all states) ---
     expect(tp[0].date).toBe("2024-01-01");
 
-    // --- Expected end date ---
+    // --- Expected end date (today, UTC midnight) ---
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayIso = today.toISOString().slice(0, 10);
+    const todayIso = formatDate(today);
     expect(tp[tp.length - 1].date).toBe(todayIso);
 
     // --- Validate completion counts dynamically ---
     const completionsByDate = {};
     items.forEach((i) => {
-      const iso = i.completed.toISOString().slice(0, 10);
+      const end = parseDate(i.cycleEnd);
+      const iso = formatDate(end);
       completionsByDate[iso] = (completionsByDate[iso] || 0) + 1;
     });
 

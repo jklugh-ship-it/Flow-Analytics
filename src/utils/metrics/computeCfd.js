@@ -1,24 +1,54 @@
-// src/utils/metrics/computeCfd.js
-
-import { eachDay } from "./eachDay";
+import { parseDate } from "../date/parseDate";
 import { formatDate } from "./formatDate";
+import { eachDay } from "./eachDay";
+
+// Normalize workflow state → find matching key in item.entered
+function getEnteredDate(item, state) {
+  if (!item.entered) return null;
+
+  // 1. Exact match
+  if (state in item.entered) return item.entered[state];
+
+  // 2. Legacy Jira-style: entered_StateName
+  const legacy = `entered_${state}`;
+  if (legacy in item.entered) return item.entered[legacy];
+
+  // 3. Replace spaces with underscores
+  const underscores = state.replace(/\s+/g, "_");
+  if (underscores in item.entered) return item.entered[underscores];
+
+  // 4. Remove spaces entirely
+  const noSpaces = state.replace(/\s+/g, "");
+  if (noSpaces in item.entered) return item.entered[noSpaces];
+
+  // 5. Lowercase comparison (last resort)
+  const lowerKeys = Object.keys(item.entered).reduce((acc, k) => {
+    acc[k.toLowerCase()] = item.entered[k];
+    return acc;
+  }, {});
+  const lowerState = state.toLowerCase();
+  if (lowerState in lowerKeys) return lowerKeys[lowerState];
+
+  return null;
+}
 
 export function computeCfd(items, workflowStates) {
   if (!items || items.length === 0) return [];
 
-  // Collect all dates that matter for the CFD timeline
   const allDates = [];
 
+  // Collect all relevant dates
   items.forEach((item) => {
-    if (item.created instanceof Date) allDates.push(item.created);
-    if (item.completed instanceof Date) allDates.push(item.completed);
+    const start = parseDate(item.cycleStart);
+    const end = parseDate(item.cycleEnd);
+
+    if (start) allDates.push(start);
+    if (end) allDates.push(end);
 
     workflowStates.forEach((state) => {
-      const d =
-        item.entered?.[`entered_${state}`] ??
-        item.entered?.[state];
-
-      if (d instanceof Date) allDates.push(d);
+      const raw = getEnteredDate(item, state);
+      const parsed = parseDate(raw);
+      if (parsed) allDates.push(parsed);
     });
   });
 
@@ -35,11 +65,9 @@ export function computeCfd(items, workflowStates) {
 
     workflowStates.forEach((state) => {
       const count = items.filter((item) => {
-        const d =
-          item.entered?.[`entered_${state}`] ??
-          item.entered?.[state];
-
-        return d instanceof Date && d <= day;
+        const raw = getEnteredDate(item, state);
+        const entered = parseDate(raw);
+        return entered && entered <= day;
       }).length;
 
       row[state] = count;

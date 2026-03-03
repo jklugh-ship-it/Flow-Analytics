@@ -1,4 +1,5 @@
-// src/utils/metrics/computeThroughputRun.js
+import { parseDate } from "../date/parseDate";
+import { formatDate } from "./formatDate";
 
 export function computeThroughputRun(items) {
   if (!items || items.length === 0) return [];
@@ -6,9 +7,9 @@ export function computeThroughputRun(items) {
   // 1. Count completions by UTC date (cycleEnd is authoritative)
   const counts = {};
   items.forEach((item) => {
-    const end = item.cycleEnd;
-    if (end instanceof Date) {
-      const iso = end.toISOString().slice(0, 10);
+    const end = parseDate(item.cycleEnd);
+    if (end) {
+      const iso = formatDate(end);
       counts[iso] = (counts[iso] || 0) + 1;
     }
   });
@@ -19,7 +20,8 @@ export function computeThroughputRun(items) {
   items.forEach((item) => {
     if (item.entered) {
       Object.values(item.entered).forEach((d) => {
-        if (d instanceof Date) allEntryDates.push(d);
+        const parsed = parseDate(d);
+        if (parsed) allEntryDates.push(parsed);
       });
     }
   });
@@ -27,43 +29,38 @@ export function computeThroughputRun(items) {
   if (allEntryDates.length === 0) return [];
 
   // Normalize earliest entry to UTC midnight
+  allEntryDates.sort((a, b) => a - b);
   const first = allEntryDates[0];
-  const firstEntry = new Date(
-    Date.UTC(
-      first.getUTCFullYear(),
-      first.getUTCMonth(),
-      first.getUTCDate()
-    )
-  );
+  const firstEntry = new Date(Date.UTC(
+    first.getUTCFullYear(),
+    first.getUTCMonth(),
+    first.getUTCDate()
+  ));
 
   // 3. End at today (UTC midnight)
   const now = new Date();
-  const today = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate()
-    )
-  );
+  const today = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate()
+  ));
 
   // 4. Build continuous timeline with zero-fill
   const run = [];
   let cursor = new Date(firstEntry);
 
   while (cursor <= today) {
-    const iso = cursor.toISOString().slice(0, 10);
+    const iso = formatDate(cursor);
     run.push({
       date: iso,
       count: counts[iso] || 0
     });
 
-    cursor = new Date(
-      Date.UTC(
-        cursor.getUTCFullYear(),
-        cursor.getUTCMonth(),
-        cursor.getUTCDate() + 1
-      )
-    );
+    cursor = new Date(Date.UTC(
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate() + 1
+    ));
   }
 
   return run;

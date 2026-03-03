@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { daysBetween, parseDate } from "../utils/metrics";
+import { daysBetween } from "../src/utils/date/daysBetween";
+import { parseDate } from "../src/utils/date/parseDate";
 
 describe("daysBetween", () => {
   it("returns null when either date is missing", () => {

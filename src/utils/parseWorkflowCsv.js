@@ -1,6 +1,6 @@
 // src/utils/parseWorkflowCsv.js
 
-import { parseDate } from "./metrics";
+import { parseDate } from "../utils/date/parseDate";
 
 // -------------------------------------------------------
 // SAFE DATE PARSER

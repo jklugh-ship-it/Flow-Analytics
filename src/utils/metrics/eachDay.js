@@ -1,9 +1,29 @@
+// src/utils/metrics/eachDay.js
+
 export function eachDay(start, end) {
   const days = [];
-  const d = new Date(start);
-  while (d <= end) {
-    days.push(new Date(d));
-    d.setDate(d.getDate() + 1);
+  if (!start || !end || start > end) return days;
+
+  let cursor = new Date(Date.UTC(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate()
+  ));
+
+  const endUtc = new Date(Date.UTC(
+    end.getUTCFullYear(),
+    end.getUTCMonth(),
+    end.getUTCDate()
+  ));
+
+  while (cursor <= endUtc) {
+    days.push(new Date(cursor));
+    cursor = new Date(Date.UTC(
+      cursor.getUTCFullYear(),
+      cursor.getUTCMonth(),
+      cursor.getUTCDate() + 1
+    ));
   }
+
   return days;
 }

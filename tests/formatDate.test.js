@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatDate, parseDate } from "../utils/metrics";
+import { formatDate } from "../src/utils/metrics/formatDate";
+import { parseDate } from "../src/utils/date/parseDate";
 
 describe("formatDate", () => {
   it("formats a Date into YYYY-MM-DD", () => {
@@ -24,7 +25,6 @@ describe("formatDate", () => {
   });
 
   it("throws if given a non-Date", () => {
-    // formatDate assumes a valid Date; invalid input should explode
     expect(() => formatDate("2024-01-01")).toThrow();
     expect(() => formatDate(null)).toThrow();
     expect(() => formatDate(undefined)).toThrow();

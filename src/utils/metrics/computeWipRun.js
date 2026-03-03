@@ -1,50 +1,40 @@
 // src/utils/metrics/computeWipRun.js
 
-import { eachDay } from "./eachDay";
+import { parseDate } from "../date/parseDate";
 import { formatDate } from "./formatDate";
+import { eachDay } from "./eachDay";
 
 export function computeWipRun(items) {
   if (!items || items.length === 0) return [];
 
   const allDates = [];
 
+  // Collect all relevant dates (cycleStart, cycleEnd)
   items.forEach((item) => {
-    if (item.created instanceof Date) {
-      const d = new Date(item.created);
-      d.setHours(0, 0, 0, 0);
-      allDates.push(d);
-    }
-    if (item.cycleEnd instanceof Date) {
-      const d = new Date(item.cycleEnd);
-      d.setHours(0, 0, 0, 0);
-      allDates.push(d);
-    }
+    const start = parseDate(item.cycleStart);
+    const end = parseDate(item.cycleEnd);
+
+    if (start) allDates.push(start);
+    if (end) allDates.push(end);
   });
 
   if (allDates.length === 0) return [];
 
   const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
-  minDate.setHours(0, 0, 0, 0);
-
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
   const days = eachDay(minDate, today);
 
   return days.map((day) => {
     const count = items.filter((item) => {
-      if (!(item.created instanceof Date)) return false;
+      const start = parseDate(item.cycleStart);
+      const end = parseDate(item.cycleEnd);
 
-      const start = new Date(item.created);
-      start.setHours(0, 0, 0, 0);
-
-      let end = null;
-      if (item.cycleEnd instanceof Date) {
-        end = new Date(item.cycleEnd);
-        end.setHours(0, 0, 0, 0);
-      }
-
-      return start <= day && (!end || end > day);
+      return (
+        start &&
+        start <= day &&
+        (!end || end > day)
+      );
     }).length;
 
     return { date: formatDate(day), count };

@@ -1,6 +1,5 @@
-// src/utils/metrics/computeCycleTimeHistogram.js
-
 import { daysBetween } from "../date/daysBetween";
+import { parseDate } from "../date/parseDate";
 
 export function computeCycleTimeHistogram(items) {
   if (!items || items.length === 0) return [];
@@ -8,16 +7,20 @@ export function computeCycleTimeHistogram(items) {
   const buckets = {};
 
   items.forEach((i) => {
-    const start = i.cycleStart;
-    const end = i.cycleEnd;
+    const rawStart = i.cycleStart;
+    const rawEnd = i.cycleEnd;
+
+    if (!rawStart || !rawEnd) return;
+
+    const start = parseDate(rawStart);
+    const end = parseDate(rawEnd);
 
     if (!start || !end) return;
 
     const ct = daysBetween(start, end);
+    if (ct == null || Number.isNaN(ct)) return;
 
-    // eliminate 0‑day cycle times
     const safeCt = Math.max(ct, 1);
-
     buckets[safeCt] = (buckets[safeCt] || 0) + 1;
   });
 

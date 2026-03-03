@@ -64,7 +64,7 @@ export default function LandingPage() {
           <ol>
             <li>
               <strong><Link to="/workflow">Define Your Workflow</Link></strong>
-              <br />Use the Workflow Designer to describe the states work moves through.
+              <br />Use the Workflow Designer to outline your process.
             </li>
 
             <li>
@@ -139,12 +139,12 @@ export default function LandingPage() {
 
             <li>
               <strong>Actionable Agile™ Blog & Videos</strong>
-              Real‑world examples of flow metrics and forecasting.
+              <br />Real‑world examples of flow metrics and forecasting.
             </li>
 
             <li>
               <strong>The Principles of Product Development Flow</strong>
-              A deeper exploration of queues, variability, and flow efficiency.
+              <br />A deeper exploration of queues, variability, and flow efficiency.
             </li>
           </ul>
         </section>

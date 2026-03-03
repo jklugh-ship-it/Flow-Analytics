@@ -11,218 +11,223 @@ import {
   mergeWorkflowStates as mergeWorkflowStatesFn
 } from "../utils/workflow/workflowMutations";
 
-// UPDATED PATH — now points to the modularized recomputeEverything
-import { recomputeEverything } from "../utils/recompute/recomputeEverything";
+import { recomputeEverything as recomputeEverythingRaw } from "../utils/recompute/recomputeEverything";
 
-export const useAnalyticsStore = create(
-  persist(
-    (set, get) => ({
-      // WORKFLOW CONFIGURATION
-      workflowStates: [],
-      workflowVisibility: {},
-      inProgressStates: {},
-      hasUserCustomizedInProgress: false,
+// --------------------------------------------------
+// Guarded recomputeEverything (prevents recompute during reset)
+// --------------------------------------------------
+function recomputeEverything(get, set) {
+  if (get()._skipRecompute) return;
+  return recomputeEverythingRaw(get, set);
+}
 
-      // RAW ITEMS (already normalized by parseWorkflowCsv)
-      items: [],
+// ------------------------------
+// Store definition (shared)
+// ------------------------------
+const createStoreImpl = (set, get) => ({
+  workflowStates: [],
+  workflowVisibility: {},
+  inProgressStates: {},
+  hasUserCustomizedInProgress: false,
 
-      setWorkflowStates: (states) => {
-        const prev = get();
+  // Internal flag to suppress recomputation during reset
+  _skipRecompute: false,
 
-        const visibility = normalizeVisibility(prev.workflowVisibility, states);
-        const inProgress = computeDefaultInProgress(states);
+  items: [],
 
-        // Warn for 2-state workflow with no working states
-        const anyInProgress = Object.values(inProgress).some(Boolean);
-        if (!anyInProgress && states.length === 2) {
-          alert(
-            "Your workflow has only two states. By default, the first and last " +
-              "states are treated as 'waiting' and 'done', so neither is marked " +
-              "as a working state. To calculate cycle time, mark at least one " +
-              "state as 'In Progress'."
-          );
-        }
+  setWorkflowStates: (states) => {
+    const prev = get();
 
-        set({
-          workflowStates: states,
-          workflowVisibility: visibility,
-          inProgressStates: inProgress,
-          hasUserCustomizedInProgress: prev.hasUserCustomizedInProgress
-        });
+    const visibility = normalizeVisibility(prev.workflowVisibility, states);
+    const inProgress = computeDefaultInProgress(states);
 
-        recomputeEverything(get, set);
-      },
+    const anyInProgress = Object.values(inProgress).some(Boolean);
+    if (!anyInProgress && states.length === 2) {
+      alert(
+        "Your workflow has only two states. By default, the first and last " +
+          "states are treated as 'waiting' and 'done', so neither is marked " +
+          "as a working state. To calculate cycle time, mark at least one " +
+          "state as 'In Progress'."
+      );
+    }
 
-      toggleWorkflowVisibility: (stateName) => {
-        const prev = get();
-        set({
-          workflowVisibility: {
-            ...prev.workflowVisibility,
-            [stateName]: !prev.workflowVisibility[stateName]
-          }
-        });
-      },
+    set({
+      workflowStates: states,
+      workflowVisibility: visibility,
+      inProgressStates: inProgress,
+      hasUserCustomizedInProgress: prev.hasUserCustomizedInProgress
+    });
 
-      addWorkflowState: (name) => {
-        const updated = addWorkflowStateFn(get().workflowStates, name);
-        get().setWorkflowStates(updated);
-      },
+    recomputeEverything(get, set);
+  },
 
-      deleteWorkflowState: (name) => {
-        const updated = deleteWorkflowStateFn(get().workflowStates, name);
-        get().setWorkflowStates(updated);
-      },
+  toggleWorkflowVisibility: (stateName) => {
+    const prev = get();
+    set({
+      workflowVisibility: {
+        ...prev.workflowVisibility,
+        [stateName]: !prev.workflowVisibility[stateName]
+      }
+    });
+  },
 
-      mergeWorkflowStates: (names, newName) => {
-        const updated = mergeWorkflowStatesFn(get().workflowStates, names, newName);
-        get().setWorkflowStates(updated);
-      },
+  addWorkflowState: (name) => {
+    const updated = addWorkflowStateFn(get().workflowStates, name);
+    get().setWorkflowStates(updated);
+  },
 
-      toggleInProgressState: (stateName) => {
-        const prev = get();
-        const updated = {
-          ...prev.inProgressStates,
-          [stateName]: !prev.inProgressStates[stateName]
-        };
+  deleteWorkflowState: (name) => {
+    const updated = deleteWorkflowStateFn(get().workflowStates, name);
+    get().setWorkflowStates(updated);
+  },
 
-        set({
-          inProgressStates: updated,
-          hasUserCustomizedInProgress: true
-        });
+  mergeWorkflowStates: (names, newName) => {
+    const updated = mergeWorkflowStatesFn(get().workflowStates, names, newName);
+    get().setWorkflowStates(updated);
+  },
 
-        recomputeEverything(get, set);
-      },
+  toggleInProgressState: (stateName) => {
+    const prev = get();
+    const updated = {
+      ...prev.inProgressStates,
+      [stateName]: !prev.inProgressStates[stateName]
+    };
 
-      // CSV METADATA
-      uploadedFileName: null,
-      setUploadedFileName: (name) => set({ uploadedFileName: name }),
+    set({
+      inProgressStates: updated,
+      hasUserCustomizedInProgress: true
+    });
 
-      // METRICS + SUMMARY (computed, not user-set)
-      metrics: {
-        cfd: [],
-        wipRun: [],
-        throughputRun: [],
-        cycleHistogram: [],
-        cycleTimeScatter: [],
-        agingWip: [],
-        cycleTimePercentiles: {},
-        wipItems: [],
-        wipStateCounts: {},
-        stability: {
-			today: { arrivalRate: 0, throughput: 0, wipAge: 0 },
-			lastWeek: { arrivalRate: 0, throughput: 0, wipAge: 0 },
-			lastMonth: { arrivalRate: 0, throughput: 0, wipAge: 0 }
-			}
-      },
+    recomputeEverything(get, set);
+  },
 
-      throughputHistory: [],
+  uploadedFileName: null,
+  setUploadedFileName: (name) => set({ uploadedFileName: name }),
 
-      summary: {
-        totalItems: 0,
-        completedItems: 0,
-        avgCycleTime: 0,
-        avgThroughput: 0
-      },
+  metrics: {
+    cfd: [],
+    wipRun: [],
+    throughputRun: [],
+    cycleHistogram: [],
+    cycleTimeScatter: [],
+    agingWip: [],
+    cycleTimePercentiles: {},
+    wipItems: [],
+    wipStateCounts: {},
+    stability: {
+      today: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+      lastWeek: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+      lastMonth: { arrivalRate: 0, throughput: 0, wipAge: 0 }
+    }
+  },
 
-      setItems: (items) => {
-        set({ items });
-        recomputeEverything(get, set);
-      },
+  throughputHistory: [],
 
-      // DATA WINDOW SETTINGS
+  summary: {
+    totalItems: 0,
+    completedItems: 0,
+    avgCycleTime: 0,
+    avgThroughput: 0
+  },
+
+  setItems: (items) => {
+    set({ items });
+    recomputeEverything(get, set);
+  },
+
+  windowSettings: {
+    windowStart: null,
+    windowEnd: null,
+    useFullDataset: false
+  },
+
+  setWindowSettings: (settings) =>
+    set({
       windowSettings: {
-        windowStart: null,
-        windowEnd: null,
-        useFullDataset: false
-      },
+        ...get().windowSettings,
+        ...settings
+      }
+    }),
 
-      setWindowSettings: (settings) =>
-        set({
-          windowSettings: {
-            ...get().windowSettings,
-            ...settings
-          }
-        }),
+  howManyResults: [],
+  howManyPercentiles: {},
+  howManySettings: {
+    startDate: null,
+    endDate: null,
+    simCount: null
+  },
 
-      // MONTE CARLO — HOW MANY
+  setHowManyResults: (results) => set({ howManyResults: results }),
+  setHowManyPercentiles: (p) => set({ howManyPercentiles: p }),
+  setHowManySettings: (settings) =>
+    set({
+      howManySettings: {
+        ...get().howManySettings,
+        ...settings
+      }
+    }),
+
+  whenHowLongResults: [],
+  whenHowLongPercentiles: {},
+  whenHowLongSettings: {
+    targetCount: null,
+    simCount: null
+  },
+
+  setWhenHowLongResults: (results) =>
+    set({ whenHowLongResults: results }),
+  setWhenHowLongPercentiles: (p) =>
+    set({ whenHowLongPercentiles: p }),
+  setWhenHowLongSettings: (settings) =>
+    set({
+      whenHowLongSettings: {
+        ...get().whenHowLongSettings,
+        ...settings
+      }
+    }),
+
+  // --------------------------------------------------
+  // Patched resetStore (no recompute, metrics=null)
+  // --------------------------------------------------
+  resetStore: () => {
+    // Block recomputation during reset
+    set({ _skipRecompute: true });
+
+    set({
+      items: [],
+      metrics: null,
+      throughputHistory: [],
+      summary: null,
+      uploadedFileName: null,
       howManyResults: [],
       howManyPercentiles: {},
-      howManySettings: {
-        startDate: null,
-        endDate: null,
-        simCount: null
-      },
-
-      setHowManyResults: (results) => set({ howManyResults: results }),
-      setHowManyPercentiles: (p) => set({ howManyPercentiles: p }),
-      setHowManySettings: (settings) =>
-        set({
-          howManySettings: {
-            ...get().howManySettings,
-            ...settings
-          }
-        }),
-
-      // MONTE CARLO — WHEN / HOW LONG
       whenHowLongResults: [],
-      whenHowLongPercentiles: {},
-      whenHowLongSettings: {
-        targetCount: null,
-        simCount: null
-      },
+      whenHowLongPercentiles: {}
+    });
 
-      setWhenHowLongResults: (results) =>
-        set({ whenHowLongResults: results }),
-      setWhenHowLongPercentiles: (p) =>
-        set({ whenHowLongPercentiles: p }),
-      setWhenHowLongSettings: (settings) =>
-        set({
-          whenHowLongSettings: {
-            ...get().whenHowLongSettings,
-            ...settings
-          }
-        }),
+    // Re-enable recomputation for future actions
+    set({ _skipRecompute: false });
+  }
+});
 
-      // RESET STORE
-      resetStore: () =>
-        set({
-          items: [],
-          metrics: {
-            cfd: [],
-            wipRun: [],
-            throughputRun: [],
-            cycleHistogram: [],
-            cycleTimeScatter: [],
-            agingWip: [],
-            cycleTimePercentiles: {},
-            wipItems: [],
-            wipStateCounts: {},
-            stability: undefined
-          },
-          throughputHistory: [],
-          summary: {
-            totalItems: 0,
-            completedItems: 0,
-            avgCycleTime: 0,
-            avgThroughput: 0
-          },
-          uploadedFileName: null,
-          howManyResults: [],
-          howManyPercentiles: {},
-          whenHowLongResults: [],
-          whenHowLongPercentiles: {}
+// ------------------------------
+// Export: persist only in browser
+// ------------------------------
+const isTest = typeof process !== "undefined" && process.env?.VITEST;
+const isServer = typeof window === "undefined" || isTest;
+
+export const useAnalyticsStore = create(
+  isServer
+    ? createStoreImpl
+    : persist(createStoreImpl, {
+        name: "analytics-store",
+        partialize: (state) => ({
+          workflowStates: state.workflowStates,
+          workflowVisibility: state.workflowVisibility,
+          inProgressStates: state.inProgressStates,
+          hasUserCustomizedInProgress: state.hasUserCustomizedInProgress
         })
-    }),
-    {
-      name: "analytics-store",
-      partialize: (state) => ({
-        workflowStates: state.workflowStates,
-        workflowVisibility: state.workflowVisibility,
-        inProgressStates: state.inProgressStates,
-        hasUserCustomizedInProgress: state.hasUserCustomizedInProgress
       })
-    }
-  )
 );
 
 if (typeof window !== "undefined") {

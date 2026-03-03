@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { eachDay, parseDate, formatDate } from "../utils/metrics";
+import { eachDay } from "../src/utils/metrics/eachDay";
+import { parseDate } from "../src/utils/date/parseDate";
+import { formatDate } from "../src/utils/metrics/formatDate";
 
 describe("eachDay", () => {
   it("returns an empty array when start > end", () => {

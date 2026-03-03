@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseDate } from "../utils/metrics";
+import { parseDate } from "../src/utils/date/parseDate";
 
 describe("parseDate", () => {
   it("returns null for null/undefined/empty", () => {

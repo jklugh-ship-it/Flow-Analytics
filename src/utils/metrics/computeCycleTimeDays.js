@@ -1,9 +1,13 @@
-// src/utils/metrics/computeCycleTimeDays.js
+import { parseDate } from "../date/parseDate";
 
 export function computeCycleTimeDays(item) {
-  if (!(item.cycleStart instanceof Date)) return null;
-  if (!(item.cycleEnd instanceof Date)) return null;
+  const start = parseDate(item.cycleStart);
+  const end = parseDate(item.cycleEnd);
 
-  const ms = item.cycleEnd.getTime() - item.cycleStart.getTime();
-  return Math.floor(ms / (24 * 60 * 60 * 1000)) + 1; // inclusive
+  if (!start || !end) return null;
+
+  const ms = end.getTime() - start.getTime();
+
+  // Inclusive cycle time: end - start + 1
+  return Math.floor(ms / (1000 * 60 * 60 * 24)) + 1;
 }
