@@ -1,70 +1,68 @@
-# Getting Started with Create React App
+# Flow Analytics
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A browser-based tool for measuring how work moves through your team's process. Upload a CSV of your work items, define your workflow, and get cycle time, WIP, throughput, and Monte Carlo forecasting — all computed locally with no data ever leaving your browser.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## Getting Started
 
-### `npm start`
+```bash
+npm install
+npm start
+```
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Then open [http://localhost:3000](http://localhost:3000).
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Usage
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. **Define your workflow** in the Workflow Designer — add states in order and mark which ones represent active work.
+2. **Download the CSV template** to get a file pre-formatted for your workflow.
+3. **Fill in your work item data** and upload it.
+4. **Explore the charts** — Cumulative Flow, WIP, Cycle Time, Throughput, and Monte Carlo forecasts.
 
-### `npm run build`
+See [`docs/user-guide.md`](docs/user-guide.md) for full instructions including CSV format details.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Privacy
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+All data is processed entirely in your browser. Nothing is uploaded or transmitted. Your workflow configuration is saved to `localStorage`; your work item data is not. You can verify this by watching the Network tab in your browser's developer tools while uploading a file — no outbound requests will appear.
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Development
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+npm start          # Run dev server
+npm run build      # Production build
+npm test           # Run tests
+npm run test:ui    # Run tests with Vitest UI
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Tests live in `tests/`. Coverage is reported via V8.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## Documentation
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+| Document | Description |
+|---|---|
+| [`docs/overview.md`](docs/overview.md) | Purpose, core concepts, and system invariants |
+| [`docs/user-guide.md`](docs/user-guide.md) | How to use the app, CSV format, chart interpretation |
+| [`docs/workflow-semantics.md`](docs/workflow-semantics.md) | State machine rules, transition semantics, edge cases |
+| [`docs/analytics.md`](docs/analytics.md) | Metric definitions and Monte Carlo simulation details |
+| [`docs/architecture.md`](docs/architecture.md) | Code structure, design decisions, and extension points |
+| [`docs/testing.md`](docs/testing.md) | Test coverage, conventions, and known gaps |
+| [`docs/data-model.md`](docs/data-model.md) | Normalized data shapes used throughout the pipeline |
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+## Tech Stack
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- **React** — UI
+- **Zustand** — state management
+- **Recharts** — charts
+- **@dnd-kit** — drag-and-drop in the Workflow Designer
+- **Vite + Vitest** — build and test tooling

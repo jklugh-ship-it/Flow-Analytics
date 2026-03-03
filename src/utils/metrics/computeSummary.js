@@ -1,7 +1,5 @@
 // src/utils/metrics/computeSummary.js
 
-console.log("computeSummary loaded from:", import.meta.url);
-
 export function computeSummary(items, metrics) {
   const completedItems = items.filter((i) => i.completed).length;
 

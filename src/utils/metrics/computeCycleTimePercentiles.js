@@ -69,8 +69,6 @@ export function computeCycleTimePercentiles(items) {
     .filter((v) => typeof v === "number" && !Number.isNaN(v))
     .sort((a, b) => a - b);
 	
-	console.log("CYCLE TIMES:",values);
-
   if (values.length === 0) {
     return { p50: null, p70: null, p85: null, p95: null };
   }

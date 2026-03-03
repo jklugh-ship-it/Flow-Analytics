@@ -11,9 +11,10 @@ export default function SortableItem({ id, children }) {
     transition
   };
 
+  // Pass listeners down so only the drag handle uses them
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
     </div>
   );
 }

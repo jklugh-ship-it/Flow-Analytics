@@ -144,6 +144,7 @@ export default function WorkflowDesigner() {
         >
           {workflowStates.map((state) => (
             <SortableItem key={state} id={state}>
+              {(listeners) => (
               <div
                 style={{
                   display: "flex",
@@ -156,6 +157,21 @@ export default function WorkflowDesigner() {
                   marginBottom: "0.5rem"
                 }}
               >
+                {/* Drag handle */}
+                <span
+                  {...listeners}
+                  style={{
+                    cursor: "grab",
+                    color: "#9ca3af",
+                    fontSize: "1rem",
+                    userSelect: "none",
+                    flexShrink: 0
+                  }}
+                  title="Drag to reorder"
+                >
+                  ⠿
+                </span>
+
                 {/* Merge selection */}
                 <input
                   type="checkbox"
@@ -189,6 +205,7 @@ export default function WorkflowDesigner() {
                 {/* Delete */}
                 <button onClick={() => handleDelete(state)}>Delete</button>
               </div>
+              )}
             </SortableItem>
           ))}
         </SortableContext>

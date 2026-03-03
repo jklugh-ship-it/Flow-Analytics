@@ -89,7 +89,7 @@ export default function LandingPage() {
             </li>
 
             <li>
-              <strong><Link to="/forecast">Run Forecasts</Link></strong>
+              <strong><Link to="/forecasts">Run Forecasts</Link></strong>
               <br />Use Monte Carlo simulations to answer “How many by when?” and “When will we finish?”.
             </li>
           </ol>

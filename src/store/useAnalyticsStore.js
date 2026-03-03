@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 import { computeDefaultInProgress } from "../utils/workflow/computeDefaultInProgress";
 import { normalizeVisibility } from "../utils/workflow/normalizeVisibility";
+import { validateWorkflowStates } from "../utils/workflow/validateWorkflowStates";
 import {
   addWorkflowState as addWorkflowStateFn,
   deleteWorkflowState as deleteWorkflowStateFn,
@@ -36,13 +37,20 @@ const createStoreImpl = (set, get) => ({
   items: [],
 
   setWorkflowStates: (states) => {
+    let validated;
+    try {
+      validated = validateWorkflowStates(states);
+    } catch (err) {
+      console.error("Invalid workflow states:", err.message);
+      return;
+    }
     const prev = get();
 
-    const visibility = normalizeVisibility(prev.workflowVisibility, states);
-    const inProgress = computeDefaultInProgress(states);
+    const visibility = normalizeVisibility(prev.workflowVisibility, validated);
+    const inProgress = computeDefaultInProgress(validated);
 
     const anyInProgress = Object.values(inProgress).some(Boolean);
-    if (!anyInProgress && states.length === 2) {
+    if (!anyInProgress && validated.length === 2) {
       alert(
         "Your workflow has only two states. By default, the first and last " +
           "states are treated as 'waiting' and 'done', so neither is marked " +
@@ -52,7 +60,7 @@ const createStoreImpl = (set, get) => ({
     }
 
     set({
-      workflowStates: states,
+      workflowStates: validated,
       workflowVisibility: visibility,
       inProgressStates: inProgress,
       hasUserCustomizedInProgress: prev.hasUserCustomizedInProgress
@@ -190,23 +198,22 @@ const createStoreImpl = (set, get) => ({
   // Patched resetStore (no recompute, metrics=null)
   // --------------------------------------------------
   resetStore: () => {
-    // Block recomputation during reset
     set({ _skipRecompute: true });
-
-    set({
-      items: [],
-      metrics: null,
-      throughputHistory: [],
-      summary: null,
-      uploadedFileName: null,
-      howManyResults: [],
-      howManyPercentiles: {},
-      whenHowLongResults: [],
-      whenHowLongPercentiles: {}
-    });
-
-    // Re-enable recomputation for future actions
-    set({ _skipRecompute: false });
+    try {
+      set({
+        items: [],
+        metrics: null,
+        throughputHistory: [],
+        summary: null,
+        uploadedFileName: null,
+        howManyResults: [],
+        howManyPercentiles: {},
+        whenHowLongResults: [],
+        whenHowLongPercentiles: {}
+      });
+    } finally {
+      set({ _skipRecompute: false });
+    }
   }
 });
 

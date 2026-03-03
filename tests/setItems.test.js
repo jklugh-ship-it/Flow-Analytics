@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { useAnalyticsStore } from "../src/store/useAnalyticsStore";
 
-// Mock recomputeCycleFields so items pass through unchanged
-vi.mock("../utils/recomputeCycleFields", () => ({
+// Fixed: correct path matches actual source location
+vi.mock("../src/utils/recomputeCycleFields", () => ({
   recomputeCycleFields: (items) => items
 }));
 
-// Mock computeAllMetrics so histogram is exactly what we want
 vi.mock("../src/utils/metrics/computeAllMetrics", () => ({
   computeAllMetrics: (items) => ({
     metrics: {
@@ -46,6 +45,22 @@ describe("setItems ingestion", () => {
     const state = useAnalyticsStore.getState();
 
     expect(state.items.length).toBe(3);
-    expect(state.summary.avgCycleTime).toBeCloseTo((5 + 3 + 1) / 3);
+    // Weighted average of cycle times 1, 3, 5 = (1*1 + 3*1 + 5*1) / 3 = 3
+    expect(state.summary.avgCycleTime).toBe(3);
+  });
+
+  it("stores zero items when given an empty array", () => {
+    useAnalyticsStore.getState().setItems([]);
+    expect(useAnalyticsStore.getState().items.length).toBe(0);
+  });
+
+  it("replaces previously loaded items on re-upload", () => {
+    useAnalyticsStore.getState().setItems([item("2024-01-01", "2024-01-02")]);
+    useAnalyticsStore.getState().setItems([
+      item("2024-02-01", "2024-02-03"),
+      item("2024-02-04", "2024-02-06")
+    ]);
+
+    expect(useAnalyticsStore.getState().items.length).toBe(2);
   });
 });

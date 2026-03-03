@@ -134,7 +134,7 @@ export default function CfdChart({ data, workflowOrder, workflowVisibility }) {
     return newRow;
   });
   
-  console.log("CFD ROWS:", filteredData.slice(0,10));
+
 
   // 4. Color palette
   const colors = [

@@ -32,7 +32,7 @@ function wipAgeOnDate(item, inProgressStates, date) {
 
   if (earliest > asOf) return null;
 
-  const ageDays = Math.floor((asOf - earliest) / (1000 * 60 * 60 * 24));
+  const ageDays = Math.floor((asOf - earliest) / (1000 * 60 * 60 * 24)) + 1;
   return ageDays >= 0 ? ageDays : null;
 }
 

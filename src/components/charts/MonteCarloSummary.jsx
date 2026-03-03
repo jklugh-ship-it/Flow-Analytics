@@ -42,9 +42,6 @@ export default function MonteCarloSummary({ throughputRun }) {
       Math.floor((end - start) / (1000 * 60 * 60 * 24))
     );
 	
-		console.log("dailyCounts", dailyCounts);
-console.log("horizonDays", horizonDays);
-
     setLoading(true);
 
     workerRef.current.postMessage({
@@ -97,7 +94,7 @@ console.log("horizonDays", horizonDays);
           </ul>
 
           <h3>Distribution Histogram</h3>
-          <MonteCarloHistogram data={results.histogram} />
+          <MonteCarloHistogram results={results.distribution} />
         </>
       )}
     </div>

@@ -4,8 +4,6 @@ import React, { useRef, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import { parseWorkflowCsv } from "../utils/parseWorkflowCsv";
 
-console.log("CSV UPLOADER MOUNTED");
-
 
 export default function CsvUploader() {
   const fileInputRef = useRef(null);
@@ -13,7 +11,6 @@ export default function CsvUploader() {
   const [uploadError, setUploadError] = useState(null);
   const [uploadInfo, setUploadInfo] = useState(null);
 
-  const workflowStates = useAnalyticsStore((s) => s.workflowStates);
   const setItems = useAnalyticsStore((s) => s.setItems);
   const setUploadedFileName = useAnalyticsStore((s) => s.setUploadedFileName);
   const setWorkflowStates = useAnalyticsStore((s) => s.setWorkflowStates);
@@ -27,31 +24,20 @@ export default function CsvUploader() {
 
     const text = await file.text();
 
-    // Parse CSV into normalized items
-    const { items, errors } = parseWorkflowCsv(text, workflowStates);
+    const { items, workflowStates: detected, errors } = parseWorkflowCsv(text);
 
     if (errors.length > 0) {
       setUploadError(errors.join(" "));
       e.target.value = "";
       return;
     }
-const { items, workflowStates: detected, errors } = parseWorkflowCsv(text);
-console.log("PARSED ITEMS:", items);
-console.log("DETECTED STATES:", detected);
-console.log("ERRORS:", errors);
 
-    // CSV is authoritative → detect workflow states from normalized items
-    const first = items[0];
-    const detectedStates = first ? Object.keys(first.entered || {}) : [];
-
-    if (detectedStates.length > 0) {
-      setWorkflowStates(detectedStates);
+    if (detected.length > 0) {
+      setWorkflowStates(detected);
     }
 
-    // Store normalized items
     setItems(items);
     setUploadedFileName(file.name);
-
     setUploadInfo(`Loaded ${items.length} items from ${file.name}.`);
 
     // Allow re-upload of same file

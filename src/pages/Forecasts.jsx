@@ -31,24 +31,26 @@ export default function Forecasts() {
   }, [throughputRun]);
 
   // Commit handlers
-  const commitStart = useCallback(() => {
-    if (!startDateInput) {
+  const commitStart = useCallback((value) => {
+    const input = value ?? startDateInput;
+    if (!input) {
       setStartIndex(0);
       return;
     }
-    const dt = new Date(startDateInput);
+    const dt = new Date(input);
     if (isNaN(dt)) return;
 
     const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
     setStartIndex(idx === -1 ? 0 : idx);
   }, [startDateInput, throughputRun]);
 
-  const commitEnd = useCallback(() => {
-    if (!endDateInput) {
+  const commitEnd = useCallback((value) => {
+    const input = value ?? endDateInput;
+    if (!input) {
       setEndIndex(maxIndex);
       return;
     }
-    const dt = new Date(endDateInput);
+    const dt = new Date(input);
     if (isNaN(dt)) return;
 
     const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
@@ -105,8 +107,11 @@ export default function Forecasts() {
       <input
         type="date"
         value={startDateInput || ""}
-        onChange={(e) => setStartDateInput(e.target.value)}
-        onBlur={commitStart}
+        onChange={(e) => {
+          setStartDateInput(e.target.value);
+          commitStart(e.target.value);
+        }}
+        onBlur={() => commitStart()}
       />
     </div>
 
@@ -115,8 +120,11 @@ export default function Forecasts() {
       <input
         type="date"
         value={endDateInput || ""}
-        onChange={(e) => setEndDateInput(e.target.value)}
-        onBlur={commitEnd}
+        onChange={(e) => {
+          setEndDateInput(e.target.value);
+          commitEnd(e.target.value);
+        }}
+        onBlur={() => commitEnd()}
       />
     </div>
 

@@ -67,7 +67,8 @@ export function computeAllMetrics(items, workflowStates, inProgressStates) {
   const stability = computeStability(
     items,
     inProgressStates,
-    new Date()
+    new Date(),
+    workflowStates
   );
 
   const throughputHistory = throughputRun.map((d) => d.count);

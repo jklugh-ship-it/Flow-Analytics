@@ -4,7 +4,7 @@ import { computeArrivalRate } from "./computeArrivalRate";
 import { computeThroughput } from "./computeThroughput";
 import { computeHistoricalWipAge } from "./computeHistoricalWipAge";
 
-export function computeStability(items, inProgressStates, today) {
+export function computeStability(items, inProgressStates, today, workflowStates = []) {
   const end = new Date(today);
   const oneDay = 1000 * 60 * 60 * 24;
 
@@ -13,26 +13,25 @@ export function computeStability(items, inProgressStates, today) {
 
   const startLastWeek = new Date(end - 7 * oneDay);
   const startLastMonth = new Date(end - 30 * oneDay);
-  
-  const endToday = end;
-  const endLastWeek = new Date(end - 7 * oneDay);
-  const endLastMonth = new Date(end - 30 * oneDay);
+
+  const firstInProgressState = inProgressStates[0] ?? workflowStates[0];
+  const lastState = workflowStates[workflowStates.length - 1];
 
   return {
     today: {
-      arrivalRate: computeArrivalRate(items, startToday, end),
-      throughput: computeThroughput(items, startToday, end),
-      wipAge: computeHistoricalWipAge(items, inProgressStates, endToday)
+      arrivalRate: computeArrivalRate(items, startToday, end, firstInProgressState),
+      throughput: computeThroughput(items, startToday, end, lastState),
+      wipAge: computeHistoricalWipAge(items, inProgressStates, end)
     },
     lastWeek: {
-      arrivalRate: computeArrivalRate(items, startLastWeek, end),
-      throughput: computeThroughput(items, startLastWeek, end),
-      wipAge: computeHistoricalWipAge(items, inProgressStates, endLastWeek)
+      arrivalRate: computeArrivalRate(items, startLastWeek, end, firstInProgressState),
+      throughput: computeThroughput(items, startLastWeek, end, lastState),
+      wipAge: computeHistoricalWipAge(items, inProgressStates, end)
     },
     lastMonth: {
-      arrivalRate: computeArrivalRate(items, startLastMonth, end),
-      throughput: computeThroughput(items, startLastMonth, end),
-      wipAge: computeHistoricalWipAge(items, inProgressStates, endLastMonth)
+      arrivalRate: computeArrivalRate(items, startLastMonth, end, firstInProgressState),
+      throughput: computeThroughput(items, startLastMonth, end, lastState),
+      wipAge: computeHistoricalWipAge(items, inProgressStates, end)
     }
   };
 }
