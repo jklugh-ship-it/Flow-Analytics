@@ -103,4 +103,34 @@ describe("useAnalyticsStore", () => {
     expect(after.metrics).toBeNull();
     expect(after.summary).toBeNull();
   });
+
+  it("clears howMany forecast results when new items are loaded", () => {
+    const store = useAnalyticsStore.getState();
+
+    // Seed existing forecast results
+    store.setHowManyResults([10, 20, 30]);
+    store.setHowManyPercentiles({ p05: 10, p15: 20, p50: 30 });
+
+    // Load new data
+    store.setItems([{ id: 1, cycleStart: "2024-01-01", cycleEnd: "2024-01-02" }]);
+
+    const after = useAnalyticsStore.getState();
+    expect(after.howManyResults).toEqual([]);
+    expect(after.howManyPercentiles).toEqual({});
+  });
+
+  it("clears whenHowLong forecast results when new items are loaded", () => {
+    const store = useAnalyticsStore.getState();
+
+    // Seed existing forecast results
+    store.setWhenHowLongResults([5, 10, 15]);
+    store.setWhenHowLongPercentiles({ p50: 5, p85: 10, p95: 15 });
+
+    // Load new data
+    store.setItems([{ id: 1, cycleStart: "2024-01-01", cycleEnd: "2024-01-02" }]);
+
+    const after = useAnalyticsStore.getState();
+    expect(after.whenHowLongResults).toEqual([]);
+    expect(after.whenHowLongPercentiles).toEqual({});
+  });
 });

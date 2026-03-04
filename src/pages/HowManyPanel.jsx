@@ -115,40 +115,42 @@ export default function HowManyPanel({ throughputWindow }) {
 
 
       {/* Controls */}
-      <section style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-        <div>
-          <label>Start date: </label>
-          <input
-            type="date"
-            value={startDate || ""}
-            onChange={(e) =>
-              setSettings({ startDate: e.target.value || null })
-            }
-          />
-        </div>
-        <div>
-          <label>End date: </label>
-          <input
-            type="date"
-            value={endDate || ""}
-            onChange={(e) =>
-              setSettings({ endDate: e.target.value || null })
-            }
-          />
-        </div>
-        <div>
-          <label>Simulations: </label>
-          <input
-            type="number"
-            min={100}
-            value={simCount ?? ""}
-            onChange={(e) =>
-              setSettings({ simCount: Number(e.target.value) || null })
-            }
-          />
-        </div>
-        <div style={{ alignSelf: "flex-end" }}>
-          <PrimaryButton onClick={handleRun}>Run Simulation</PrimaryButton>
+      <section style={{ marginBottom: "1rem" }}>
+        <div className="forecast-controls">
+          <div className="forecast-field">
+            <label className="forecast-label">Start date</label>
+            <input
+              type="date"
+              value={startDate || ""}
+              onChange={(e) =>
+                setSettings({ startDate: e.target.value || null })
+              }
+            />
+          </div>
+          <div className="forecast-field">
+            <label className="forecast-label">End date</label>
+            <input
+              type="date"
+              value={endDate || ""}
+              onChange={(e) =>
+                setSettings({ endDate: e.target.value || null })
+              }
+            />
+          </div>
+          <div className="forecast-field">
+            <label className="forecast-label">Simulations</label>
+            <input
+              type="number"
+              min={100}
+              value={simCount ?? ""}
+              onChange={(e) =>
+                setSettings({ simCount: Number(e.target.value) || null })
+              }
+            />
+          </div>
+          <div className="forecast-field forecast-field--action">
+            <PrimaryButton onClick={handleRun}>Run Simulation</PrimaryButton>
+          </div>
         </div>
       </section>
 
@@ -197,6 +199,38 @@ export default function HowManyPanel({ throughputWindow }) {
 </div>
         )}
       </section>
+
+      <style>{`
+        .forecast-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          align-items: flex-end;
+        }
+        .forecast-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          min-width: 120px;
+        }
+        .forecast-field--action {
+          justify-content: flex-end;
+        }
+        .forecast-label {
+          font-size: 0.85rem;
+          font-weight: 500;
+          opacity: 0.75;
+        }
+        @media (max-width: 768px) {
+          .forecast-field {
+            width: 100%;
+          }
+          .forecast-field input {
+            width: 100%;
+            box-sizing: border-box;
+          }
+        }
+      `}</style>
     </div>
   );
 }

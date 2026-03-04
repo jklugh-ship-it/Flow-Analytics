@@ -31,26 +31,24 @@ export default function Forecasts() {
   }, [throughputRun]);
 
   // Commit handlers
-  const commitStart = useCallback((value) => {
-    const input = value ?? startDateInput;
-    if (!input) {
+  const commitStart = useCallback(() => {
+    if (!startDateInput) {
       setStartIndex(0);
       return;
     }
-    const dt = new Date(input);
+    const dt = new Date(startDateInput);
     if (isNaN(dt)) return;
 
     const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
     setStartIndex(idx === -1 ? 0 : idx);
   }, [startDateInput, throughputRun]);
 
-  const commitEnd = useCallback((value) => {
-    const input = value ?? endDateInput;
-    if (!input) {
+  const commitEnd = useCallback(() => {
+    if (!endDateInput) {
       setEndIndex(maxIndex);
       return;
     }
-    const dt = new Date(input);
+    const dt = new Date(endDateInput);
     if (isNaN(dt)) return;
 
     const idx = throughputRun.findIndex((d) => new Date(d.date) >= dt);
@@ -75,79 +73,94 @@ export default function Forecasts() {
     <div style={{ padding: "1.5rem" }}>
       <h1 style={{ marginBottom: "1.5rem" }}>Forecasts</h1>
 
-      {/* Top Row: Preview + Controls */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "2rem",
-          marginBottom: "2rem"
-        }}
-      >
-        {/* Throughput Preview */}
-        <section>
-          <h3>Throughput Preview</h3>
+      {/* Throughput Preview */}
+      <section style={{ marginBottom: "2rem" }}>
+        <h3>Throughput Preview</h3>
+        <div style={{ position: "relative", width: "100%", height: 260 }}>
+          <ThroughputPreviewChart
+            throughputRun={throughputRun}
+            startDate={startDateInput}
+            endDate={endDateInput}
+          />
+        </div>
+      </section>
 
-          <div style={{ position: "relative", width: "100%", height: 260 }}>
-            <ThroughputPreviewChart
-              throughputRun={throughputRun}
-              startDate={startDateInput}
-              endDate={endDateInput}
+      {/* Data Window Controls */}
+      <section style={{ marginBottom: "2rem" }}>
+        <h3>Data Window</h3>
+        <div className="forecast-controls">
+          <div className="forecast-field">
+            <label className="forecast-label">Start date</label>
+            <input
+              type="date"
+              value={startDateInput || ""}
+              onChange={(e) => setStartDateInput(e.target.value)}
+              onBlur={commitStart}
             />
           </div>
-        </section>
 
-        {/* Date Window Controls */}
-<section>
-  <h3>Data Window</h3>
+          <div className="forecast-field">
+            <label className="forecast-label">End date</label>
+            <input
+              type="date"
+              value={endDateInput || ""}
+              onChange={(e) => setEndDateInput(e.target.value)}
+              onBlur={commitEnd}
+            />
+          </div>
 
-  <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-    <div>
-      <label>Start date: </label>
-      <input
-        type="date"
-        value={startDateInput || ""}
-        onChange={(e) => {
-          setStartDateInput(e.target.value);
-          commitStart(e.target.value);
-        }}
-        onBlur={() => commitStart()}
-      />
-    </div>
+          <div className="forecast-field forecast-field--action">
+            <PrimaryButton onClick={resetWindow}>Reset to Full Dataset</PrimaryButton>
+          </div>
+        </div>
+      </section>
 
-    <div>
-      <label>End date: </label>
-      <input
-        type="date"
-        value={endDateInput || ""}
-        onChange={(e) => {
-          setEndDateInput(e.target.value);
-          commitEnd(e.target.value);
-        }}
-        onBlur={() => commitEnd()}
-      />
-    </div>
-
-    <div style={{ alignSelf: "flex-end" }}>
-  <PrimaryButton onClick={resetWindow}>Reset to Full Dataset</PrimaryButton>
-</div>
-
-  </div>
-</section>
-      </div>
-
-      {/* Bottom Row: Two Panels */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: "2rem",
-          alignItems: "start"
-        }}
-      >
+      {/* Simulation Panels */}
+      <div className="forecasts-panels">
         <HowManyPanel throughputWindow={filtered} />
         <WhenHowLongPanel throughputWindow={filtered} />
       </div>
+
+      <style>{`
+        .forecast-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          align-items: flex-end;
+        }
+        .forecast-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          min-width: 120px;
+        }
+        .forecast-field--action {
+          justify-content: flex-end;
+        }
+        .forecast-label {
+          font-size: 0.85rem;
+          font-weight: 500;
+          opacity: 0.75;
+        }
+        .forecasts-panels {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          align-items: start;
+        }
+        @media (max-width: 768px) {
+          .forecast-field {
+            width: 100%;
+          }
+          .forecast-field input {
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .forecasts-panels {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </div>
   );
 }
