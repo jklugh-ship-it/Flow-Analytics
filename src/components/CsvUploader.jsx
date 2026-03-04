@@ -4,7 +4,6 @@ import React, { useRef, useState } from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import { parseWorkflowCsv } from "../utils/parseWorkflowCsv";
 
-
 export default function CsvUploader() {
   const fileInputRef = useRef(null);
 
@@ -23,7 +22,6 @@ export default function CsvUploader() {
     setUploadInfo(null);
 
     const text = await file.text();
-
     const { items, workflowStates: detected, errors } = parseWorkflowCsv(text);
 
     if (errors.length > 0) {
@@ -33,7 +31,7 @@ export default function CsvUploader() {
     }
 
     if (detected.length > 0) {
-      setWorkflowStates(detected);
+      setWorkflowStates(detected.map((s) => s.replace(/^entered_/, "")));
     }
 
     setItems(items);

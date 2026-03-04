@@ -3,6 +3,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { triggerHeaderCsvUpload } from "../layout/HeaderBar";
+import SampleDataLoader from "../components/SampleDataLoader";
 
 export default function LandingPage() {
   return (
@@ -89,7 +90,7 @@ export default function LandingPage() {
             </li>
 
             <li>
-              <strong><Link to="/forecasts">Run Forecasts</Link></strong>
+              <strong><Link to="/forecast">Run Forecasts</Link></strong>
               <br />Use Monte Carlo simulations to answer “How many by when?” and “When will we finish?”.
             </li>
           </ol>
@@ -147,6 +148,18 @@ export default function LandingPage() {
               <br />A deeper exploration of queues, variability, and flow efficiency.
             </li>
           </ul>
+        </section>
+        {/* Panel 4 — Sample Data */}
+        <section
+          style={{
+            padding: "1.5rem",
+            borderRadius: "8px",
+            background: "#f9fafb",
+            border: "1px solid #e5e7eb"
+          }}
+        >
+          <h2>Try It With Sample Data</h2>
+          <SampleDataLoader />
         </section>
       </div>
     </div>

@@ -1,57 +1,88 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+// src/layout/SideBar.jsx
 
-export default function SideBar() {
+import React, { useEffect } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+
+const SIDEBAR_WIDTH = "240px";
+
+export default function SideBar({ open, onClose }) {
+  const location = useLocation();
+
+  // Close sidebar on navigation (mobile)
+  useEffect(() => {
+    onClose();
+  }, [location.pathname]);
+
   return (
-    <aside
-      style={{
-        width: "240px",
-        background: "#1f2937",
-        color: "white",
-        padding: "1.5rem 1rem",
-        display: "flex",
-        flexDirection: "column",
-        gap: "1rem"
-      }}
-    >
-      <h2 style={{ margin: 0, fontSize: "1.4rem" }}>Flow Analytics</h2>
+    <>
+      {/* Mobile overlay — tap outside to close */}
+      {open && (
+        <div
+          onClick={onClose}
+          style={{
+            display: "none",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 40
+          }}
+          className="sidebar-overlay"
+        />
+      )}
 
-      <nav
+      <aside
+        className="sidebar"
         style={{
-          marginTop: "2rem",
+          width: SIDEBAR_WIDTH,
+          background: "#1f2937",
+          color: "white",
+          padding: "1.5rem 1rem",
           display: "flex",
           flexDirection: "column",
-          gap: "0.75rem"
+          gap: "1rem",
+          flexShrink: 0
         }}
       >
-        {/* Home + Workflow */}
-        <SidebarLink to="/">Home</SidebarLink>
-        <SidebarLink to="/workflow">Workflow Designer</SidebarLink>
+        <h2 style={{ margin: 0, fontSize: "1.4rem" }}>Flow Analytics</h2>
 
-        {/* Overview */}
-        <SidebarLink to="/overview">Overview</SidebarLink>
+        <nav
+          style={{
+            marginTop: "2rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem"
+          }}
+        >
+          <SidebarLink to="/">Home</SidebarLink>
+          <SidebarLink to="/workflow">Workflow Designer</SidebarLink>
+          <SidebarLink to="/overview">Overview</SidebarLink>
+          <SidebarLink to="/charts/cfd" indent>Cumulative Flow Diagram</SidebarLink>
+          <SidebarLink to="/charts/wip" indent>Work in Progress</SidebarLink>
+          <SidebarLink to="/charts/throughput" indent>Throughput</SidebarLink>
+          <SidebarLink to="/charts/cycle-time" indent>Cycle Time</SidebarLink>
+          <SidebarLink to="/forecasts" indent>Forecasts</SidebarLink>
+          <SidebarLink to="/privacy">Privacy</SidebarLink>
+        </nav>
+      </aside>
 
-        {/* Indented chart pages */}
-        <SidebarLink to="/charts/cfd" indent>
-          Cumulative Flow Diagram
-        </SidebarLink>
-        <SidebarLink to="/charts/wip" indent>
-          Work in Progress
-        </SidebarLink>
-        <SidebarLink to="/charts/throughput" indent>
-          Throughput
-        </SidebarLink>
-        <SidebarLink to="/charts/cycle-time" indent>
-          Cycle Time
-        </SidebarLink>
-        <SidebarLink to="/forecasts" indent>
-		  Forecasts
-		</SidebarLink>
-
-        {/* Privacy */}
-        <SidebarLink to="/privacy">Privacy</SidebarLink>
-      </nav>
-    </aside>
+      {/* Responsive styles */}
+      <style>{`
+        @media (max-width: 768px) {
+          .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 50;
+            transform: ${open ? "translateX(0)" : `translateX(-${SIDEBAR_WIDTH})`};
+            transition: transform 0.25s ease;
+          }
+          .sidebar-overlay {
+            display: block !important;
+          }
+        }
+      `}</style>
+    </>
   );
 }
 

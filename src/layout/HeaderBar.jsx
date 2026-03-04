@@ -12,7 +12,7 @@ export function triggerHeaderCsvUpload() {
   if (input) input.click();
 }
 
-export default function HeaderBar() {
+export default function HeaderBar({ onMenuClick }) {
   const location = useLocation();
 
 // ---Upload Button Styling---
@@ -111,16 +111,36 @@ const uploadButtonStyle = {
         zIndex: 10
       }}
     >
-      {/* LEFT SIDE: Title + Data Status */}
-      <div>
-        <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 600 }}>
-          {title}
-        </h1>
+      {/* LEFT SIDE: Hamburger (mobile) + Title + Data Status */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        {/* Hamburger — only visible on mobile */}
+        <button
+          className="hamburger-btn"
+          onClick={onMenuClick}
+          aria-label="Open navigation menu"
+          style={{
+            display: "none",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "0.25rem",
+            fontSize: "1.5rem",
+            lineHeight: 1,
+            color: "#1f2937"
+          }}
+        >
+          ☰
+        </button>
 
-        <div style={{ fontStyle: "italic", opacity: 0.8, marginTop: "0.25rem" }}>
-          {uploadedFileName
-            ? `Using data from: ${uploadedFileName}`
-            : "No data uploaded"}
+        <div>
+          <h1 style={{ margin: 0, fontSize: "1.5rem", fontWeight: 600 }}>
+            {title}
+          </h1>
+          <div style={{ fontStyle: "italic", opacity: 0.8, marginTop: "0.25rem" }}>
+            {uploadedFileName
+              ? `Using data from: ${uploadedFileName}`
+              : "No data uploaded"}
+          </div>
         </div>
       </div>
 
@@ -128,20 +148,27 @@ const uploadButtonStyle = {
       <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
         {/* Upload CSV */}
         <label style={uploadButtonStyle}>
-  Upload CSV
-  <input
-    id="header-csv-input"
-    type="file"
-    accept=".csv,text/csv"
-    onChange={handleCsvUpload}
-    style={{ display: "none" }}
-  />
-</label>
-
+          Upload CSV
+          <input
+            id="header-csv-input"
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleCsvUpload}
+            style={{ display: "none" }}
+          />
+        </label>
 
         {/* Reset Data */}
         <PrimaryButton onClick={resetData}>Reset Data</PrimaryButton>
       </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .hamburger-btn {
+            display: block !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }

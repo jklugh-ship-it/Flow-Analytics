@@ -1,13 +1,15 @@
 // src/layout/AppLayout.jsx
 
-import React from "react";
+import React, { useState } from "react";
 import HeaderBar from "./HeaderBar";
 import SideBar from "./SideBar";
 
 export default function AppLayout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <SideBar />
+      <SideBar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content */}
       <main
@@ -16,10 +18,11 @@ export default function AppLayout({ children }) {
           background: "#f9fafb",
           display: "flex",
           flexDirection: "column",
-          minHeight: 0
+          minHeight: 0,
+          minWidth: 0
         }}
       >
-        <HeaderBar />
+        <HeaderBar onMenuClick={() => setSidebarOpen((o) => !o)} />
 
         <div
           style={{
