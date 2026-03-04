@@ -131,13 +131,7 @@ const createStoreImpl = (set, get) => ({
   },
 
   setItems: (items) => {
-    set({
-      items,
-      howManyResults: [],
-      howManyPercentiles: {},
-      whenHowLongResults: [],
-      whenHowLongPercentiles: {}
-    });
+    set({ items });
     recomputeEverything(get, set);
   },
 
@@ -193,7 +187,7 @@ const createStoreImpl = (set, get) => ({
     }),
 
   // --------------------------------------------------
-  // Patched resetStore (no recompute, metrics=null)
+  // Patched resetStore (no recompute, metrics=empty)
   // --------------------------------------------------
   resetStore: () => {
     // Block recomputation during reset
@@ -201,9 +195,29 @@ const createStoreImpl = (set, get) => ({
 
     set({
       items: [],
-      metrics: null,
+      metrics: {
+        cfd: [],
+        wipRun: [],
+        throughputRun: [],
+        cycleHistogram: [],
+        cycleTimeScatter: [],
+        agingWip: [],
+        cycleTimePercentiles: {},
+        wipItems: [],
+        wipStateCounts: {},
+        stability: {
+          today: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+          lastWeek: { arrivalRate: 0, throughput: 0, wipAge: 0 },
+          lastMonth: { arrivalRate: 0, throughput: 0, wipAge: 0 }
+        }
+      },
       throughputHistory: [],
-      summary: null,
+      summary: {
+        totalItems: 0,
+        completedItems: 0,
+        avgCycleTime: 0,
+        avgThroughput: 0
+      },
       uploadedFileName: null,
       howManyResults: [],
       howManyPercentiles: {},
