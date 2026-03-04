@@ -4,6 +4,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { triggerHeaderCsvUpload } from "../layout/HeaderBar";
 import SampleDataLoader from "../components/SampleDataLoader";
+import { card, cardTitle } from "../styles/cards";
 
 export default function LandingPage() {
   return (
@@ -19,15 +20,8 @@ export default function LandingPage() {
         }}
       >
         {/* Panel 1 — What Flow Analytics Are */}
-        <section
-          style={{
-            padding: "1.5rem",
-            borderRadius: "8px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb"
-          }}
-        >
-          <h2>What Are Flow Analytics?</h2>
+        <section style={card}>
+          <h2 style={cardTitle}>What Are Flow Analytics?</h2>
           <p>
             Flow analytics help teams understand how work actually moves through
             their system. Instead of relying on intuition, flow metrics reveal
@@ -48,15 +42,8 @@ export default function LandingPage() {
         </section>
 
         {/* Panel 2 — How to Use This Application */}
-        <section
-          style={{
-            padding: "1.5rem",
-            borderRadius: "8px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb"
-          }}
-        >
-          <h2>How to Use This Application</h2>
+        <section style={card}>
+          <h2 style={cardTitle}>How to Use This Application</h2>
           <p>
             Everything runs entirely in your browser. No uploads. No storage. No
             transmission. Your data stays with you.
@@ -97,15 +84,8 @@ export default function LandingPage() {
         </section>
 
         {/* Panel 3 — Learn More */}
-        <section
-          style={{
-            padding: "1.5rem",
-            borderRadius: "8px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb"
-          }}
-        >
-          <h2>Learn More About Flow Metrics</h2>
+        <section style={card}>
+          <h2 style={cardTitle}>Learn More About Flow Metrics</h2>
           <p>
             If you want to go deeper into the ideas behind this tool, these
             resources are a great place to start:
@@ -150,15 +130,8 @@ export default function LandingPage() {
           </ul>
         </section>
         {/* Panel 4 — Sample Data */}
-        <section
-          style={{
-            padding: "1.5rem",
-            borderRadius: "8px",
-            background: "#f9fafb",
-            border: "1px solid #e5e7eb"
-          }}
-        >
-          <h2>Try It With Sample Data</h2>
+        <section style={card}>
+          <h2 style={cardTitle}>Try It With Sample Data</h2>
           <SampleDataLoader />
         </section>
       </div>

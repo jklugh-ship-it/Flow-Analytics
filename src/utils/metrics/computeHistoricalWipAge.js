@@ -45,5 +45,5 @@ export function computeHistoricalWipAge(items, inProgressStates, windowEnd) {
   if (ages.length === 0) return 0;
 
   const avg = ages.reduce((a, b) => a + b, 0) / ages.length;
-  return Math.round(avg);
+  return Math.round(avg * 100) / 100;
 }

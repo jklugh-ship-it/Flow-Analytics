@@ -82,16 +82,16 @@ describe("computeAgingWip", () => {
 
 describe("computeArrivalRate", () => {
   const start = utc("2024-01-01");
-  const end = utc("2024-01-07");
+  const end = utc("2024-01-07"); // 6 day window
 
-  it("counts items whose first in-progress entry falls within the window", () => {
+  it("returns a daily rate for items within the window", () => {
     const items = [
       { "entered_Ready": utc("2024-01-03") },
       { "entered_Ready": utc("2024-01-05") },
       { "entered_Ready": utc("2024-01-10") } // outside window
     ];
-
-    expect(computeArrivalRate(items, start, end, "Ready")).toBe(2);
+    // 2 items / 6 days = 0.33
+    expect(computeArrivalRate(items, start, end, "Ready")).toBe(0.33);
   });
 
   it("returns zero when no items fall within the window", () => {
@@ -113,7 +113,21 @@ describe("computeArrivalRate", () => {
       { "entered_Ready": start },
       { "entered_Ready": end }
     ];
-    expect(computeArrivalRate(items, start, end, "Ready")).toBe(2);
+    // 2 items / 6 days = 0.33
+    expect(computeArrivalRate(items, start, end, "Ready")).toBe(0.33);
+  });
+
+  it("returns 1.0 when one item arrives per day", () => {
+    const items = [
+      { "entered_Ready": utc("2024-01-01") },
+      { "entered_Ready": utc("2024-01-02") },
+      { "entered_Ready": utc("2024-01-03") },
+      { "entered_Ready": utc("2024-01-04") },
+      { "entered_Ready": utc("2024-01-05") },
+      { "entered_Ready": utc("2024-01-06") },
+    ];
+    // 6 items / 6 days = 1.0
+    expect(computeArrivalRate(items, start, end, "Ready")).toBe(1);
   });
 });
 
@@ -124,15 +138,16 @@ describe("computeArrivalRate", () => {
 
 describe("computeThroughput", () => {
   const start = utc("2024-01-01");
-  const end = utc("2024-01-07");
+  const end = utc("2024-01-07"); // 6 day window
 
-  it("counts items whose terminal state entry falls within the window", () => {
+  it("returns a daily rate for items completed within the window", () => {
     const items = [
       { "entered_Done": utc("2024-01-02") },
       { "entered_Done": utc("2024-01-06") },
       { "entered_Done": utc("2024-01-15") } // outside
     ];
-    expect(computeThroughput(items, start, end, "Done")).toBe(2);
+    // 2 items / 6 days = 0.33
+    expect(computeThroughput(items, start, end, "Done")).toBe(0.33);
   });
 
   it("returns zero when no items are completed in the window", () => {
@@ -145,7 +160,8 @@ describe("computeThroughput", () => {
       { "entered_Done": start },
       { "entered_Done": end }
     ];
-    expect(computeThroughput(items, start, end, "Done")).toBe(2);
+    // 2 items / 6 days = 0.33
+    expect(computeThroughput(items, start, end, "Done")).toBe(0.33);
   });
 
   it("works with any state name", () => {
@@ -153,7 +169,8 @@ describe("computeThroughput", () => {
       { "entered_Released": utc("2024-01-03") },
       { "entered_Released": utc("2024-01-04") }
     ];
-    expect(computeThroughput(items, start, end, "Released")).toBe(2);
+    // 2 items / 6 days = 0.33
+    expect(computeThroughput(items, start, end, "Released")).toBe(0.33);
   });
 });
 
@@ -192,11 +209,11 @@ describe("computeStability", () => {
 
   it("counts items completed today in today throughput", () => {
     const today = new Date();
-    today.setUTCHours(12, 0, 0, 0); // midday today
+    today.setUTCHours(12, 0, 0, 0);
 
     const items = [{ "entered_Done": today }];
     const result = computeStability(items, inProgressStates, new Date(), workflowStates);
-    expect(result.today.throughput).toBe(1);
+    expect(result.today.throughput).toBeGreaterThan(0);
   });
 
   it("counts items from the last 30 days in lastMonth throughput", () => {
@@ -206,6 +223,69 @@ describe("computeStability", () => {
 
     const items = [{ "entered_Done": twentyDaysAgo }];
     const result = computeStability(items, inProgressStates, new Date(), workflowStates);
-    expect(result.lastMonth.throughput).toBe(1);
+    expect(result.lastMonth.throughput).toBeGreaterThan(0);
+  });
+
+  it("counts arrival rate using the first in-progress workflow state", () => {
+    const today = new Date();
+    today.setUTCHours(12, 0, 0, 0);
+
+    const items = [{ "entered_In Progress": today }];
+    const result = computeStability(items, inProgressStates, new Date(), workflowStates);
+    expect(result.today.arrivalRate).toBeGreaterThan(0);
+  });
+
+  it("returns 0 arrival rate when workflow in-progress state name does not match item data", () => {
+    const today = new Date();
+    today.setUTCHours(12, 0, 0, 0);
+
+    const differentWorkflow = ["Backlog", "Active", "Closed"];
+    const items = [{ "entered_In Progress": today }];
+    const result = computeStability(items, ["Active"], new Date(), differentWorkflow);
+    expect(result.today.arrivalRate).toBe(0);
+  });
+
+  it("WIP age differs across periods based on historical snapshot date", () => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    // Item started 20 days ago, still in progress
+    const twentyDaysAgo = new Date(today);
+    twentyDaysAgo.setUTCDate(twentyDaysAgo.getUTCDate() - 20);
+
+    const items = [{
+      "entered_In Progress": twentyDaysAgo,
+      cycleEnd: null
+    }];
+
+    const result = computeStability(items, inProgressStates, today, workflowStates);
+
+    // Today: item has been active for 21 days (inclusive)
+    // Last week (7 days ago): item was 14 days old
+    // Last month (30 days ago): item hadn't started yet, so 0
+    expect(result.today.wipAge).toBeGreaterThan(result.lastWeek.wipAge);
+    expect(result.lastWeek.wipAge).toBeGreaterThan(0);
+    expect(result.lastMonth.wipAge).toBe(0);
+  });
+
+  it("WIP age is a decimal average across multiple items", () => {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setUTCDate(threeDaysAgo.getUTCDate() - 3);
+
+    const fiveDaysAgo = new Date(today);
+    fiveDaysAgo.setUTCDate(fiveDaysAgo.getUTCDate() - 5);
+
+    const items = [
+      { "entered_In Progress": threeDaysAgo, cycleEnd: null },
+      { "entered_In Progress": fiveDaysAgo, cycleEnd: null }
+    ];
+
+    const result = computeStability(items, inProgressStates, today, workflowStates);
+
+    // 4 days (inclusive) and 6 days (inclusive) → average 5.0
+    expect(result.today.wipAge).toBe(5);
   });
 });

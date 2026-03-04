@@ -1,9 +1,12 @@
+// src/pages/Overview.jsx
+
 import React from "react";
 import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import WorkflowFlowGraphic from "../components/WorkflowFlowGraphic";
 import CycleTime from "../components/CycleTime";
 import Wip from "../components/Wip";
 import Stability from "../components/Stability";
+import { card, cardTitle } from "../styles/cards";
 
 export default function Overview() {
   const {
@@ -21,20 +24,13 @@ export default function Overview() {
   } = metrics;
 
   return (
-    <div style={{ padding: "1.5rem" }}>
+    <div style={{ padding: "1.5rem", maxWidth: "1400px" }}>
       <h1 style={{ marginBottom: "1.5rem" }}>Overview</h1>
 
-      {/* WORKFLOW CONTEXT GRAPHIC */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h3 style={{ marginTop: 0 }}>Workflow</h3>
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            width: "100%"
-          }}
-        >
+      {/* Workflow graphic */}
+      <div style={{ ...card, marginBottom: "1.5rem" }}>
+        <h2 style={cardTitle}>Workflow</h2>
+        <div style={{ display: "flex", justifyContent: "center" }}>
           <div style={{ display: "inline-block" }}>
             <WorkflowFlowGraphic
               workflowStates={workflowStates}
@@ -43,73 +39,42 @@ export default function Overview() {
             />
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* SUMMARY METRICS: Cycle Time / WIP / Stability */}
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "2rem",
-          marginBottom: "2rem",
-          alignItems: "start"
-        }}
-      >
-        {/* Cycle Time */}
-        <div style={{ borderRadius: "8px" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
-            Cycle Time
-          </h3>
-
-          <div
-            style={{
-              padding: "1rem",
-              display: "flex",
-              justifyContent: "center"
-            }}
-          >
-            <CycleTime percentiles={cycleTimePercentiles} />
-          </div>
+      {/* Metric cards */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+        gap: "1.5rem",
+        alignItems: "start"
+      }}>
+        <div style={card}>
+          <h2 style={cardTitle}>Cycle Time</h2>
+          <CycleTime percentiles={cycleTimePercentiles} />
         </div>
 
-        {/* Current WIP */}
-        <div style={{ borderRadius: "8px" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
-            Current WIP
-          </h3>
-
-          <div
-            style={{
-              padding: "1rem",
-              display: "flex",
-              justifyContent: "center"
-            }}
-          >
-            <Wip wipItems={wipItems} stateCounts={wipStateCounts} />
-          </div>
+        <div style={card}>
+          <h2 style={cardTitle}>Current WIP</h2>
+          <Wip wipItems={wipItems} stateCounts={wipStateCounts} />
         </div>
 
-        {/* Stability */}
-        <div style={{ borderRadius: "8px" }}>
-          <h3 style={{ marginTop: 0, marginBottom: "1rem", textAlign: "left" }}>
-            Stability
-          </h3>
-
-          <div
-            style={{
-              padding: "1rem",
-              display: "flex",
-              justifyContent: "center"
-            }}
-          >
-            <Stability
-              today={stability.today}
-              lastWeek={stability.lastWeek}
-              lastMonth={stability.lastMonth}
-            />
-          </div>
+        <div style={card}>
+          <h2 style={cardTitle}>Stability</h2>
+          <Stability
+            today={stability.today}
+            lastWeek={stability.lastWeek}
+            lastMonth={stability.lastMonth}
+          />
         </div>
-      </section>
+      </div>
+
+      <style>{`
+        @media (max-width: 768px) {
+          .overview-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

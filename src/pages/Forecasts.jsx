@@ -7,6 +7,8 @@ import WhenHowLongPanel from "./WhenHowLongPanel";
 import ThroughputPreviewChart from "../components/charts/ThroughputPreviewChart";
 import PrimaryButton from "../components/PrimaryButton";
 
+import { card, cardTitle } from "../styles/cards";
+
 export default function Forecasts() {
   const throughputRun = useAnalyticsStore((s) => s.metrics.throughputRun);
 
@@ -70,12 +72,12 @@ export default function Forecasts() {
   };
 
   return (
-    <div style={{ padding: "1.5rem" }}>
+    <div style={{ padding: "1.5rem", maxWidth: "1400px" }}>
       <h1 style={{ marginBottom: "1.5rem" }}>Forecasts</h1>
 
       {/* Throughput Preview */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h3>Throughput Preview</h3>
+      <div style={{ ...card, marginBottom: "1.5rem" }}>
+        <h2 style={cardTitle}>Throughput Preview</h2>
         <div style={{ position: "relative", width: "100%", height: 260 }}>
           <ThroughputPreviewChart
             throughputRun={throughputRun}
@@ -83,11 +85,11 @@ export default function Forecasts() {
             endDate={endDateInput}
           />
         </div>
-      </section>
+      </div>
 
       {/* Data Window Controls */}
-      <section style={{ marginBottom: "2rem" }}>
-        <h3>Data Window</h3>
+      <div style={{ ...card, marginBottom: "1.5rem" }}>
+        <h2 style={cardTitle}>Data Window</h2>
         <div className="forecast-controls">
           <div className="forecast-field">
             <label className="forecast-label">Start date</label>
@@ -113,7 +115,7 @@ export default function Forecasts() {
             <PrimaryButton onClick={resetWindow}>Reset to Full Dataset</PrimaryButton>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Simulation Panels */}
       <div className="forecasts-panels">

@@ -5,6 +5,7 @@ import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloWhenHowLong from "../hooks/useMonteCarloWhenHowLong";
 import WhenHowLongHistogram from "../components/charts/WhenHowLongHistogram";
 import PrimaryButton from "../components/PrimaryButton";
+import { card, cardTitle } from "../styles/cards";
 
 
 export default function WhenHowLongPanel({ throughputWindow }) {
@@ -96,8 +97,8 @@ export default function WhenHowLongPanel({ throughputWindow }) {
   }, [startDate, p50, p85, p95]);
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <h2>How Long Will It Take?</h2>
+    <div style={card}>
+      <h2 style={cardTitle}>How Long Will It Take?</h2>
 
       {/* Controls */}
       <section style={{ marginBottom: "1rem" }}>

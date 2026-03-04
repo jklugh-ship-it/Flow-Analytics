@@ -5,6 +5,7 @@ import { useAnalyticsStore } from "../store/useAnalyticsStore";
 import useMonteCarloHowMany from "../hooks/useMonteCarloHowMany";
 import MonteCarloHistogram from "../components/charts/MonteCarloHistogram";
 import PrimaryButton from "../components/PrimaryButton";
+import { card, cardTitle } from "../styles/cards";
 
 export default function HowManyPanel({ throughputWindow }) {
   const fullThroughput = useAnalyticsStore((s) => s.throughputHistory);
@@ -103,8 +104,8 @@ export default function HowManyPanel({ throughputWindow }) {
   const { p05, p15, p50 } = percentiles;
 
   return (
-    <div style={{ padding: "1.5rem" }}>
-      <h2>How Many Can We Finish?</h2>
+    <div style={card}>
+      <h2 style={cardTitle}>How Many Can We Finish?</h2>
 
   {zeroWarning && (
   <div className="warning">
