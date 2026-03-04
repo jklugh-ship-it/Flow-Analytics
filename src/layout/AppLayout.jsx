@@ -1,15 +1,17 @@
 // src/layout/AppLayout.jsx
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import HeaderBar from "./HeaderBar";
 import SideBar from "./SideBar";
 
 export default function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
   return (
     <div style={{ display: "flex", height: "100vh" }}>
-      <SideBar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SideBar open={sidebarOpen} onClose={closeSidebar} />
 
       {/* Main Content */}
       <main
