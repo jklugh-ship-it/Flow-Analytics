@@ -187,13 +187,12 @@ const createStoreImpl = (set, get) => ({
     }),
 
   // --------------------------------------------------
-  // Patched resetStore (no recompute, metrics=empty)
+  // --------------------------------------------------
+  // resetStore: single atomic set, no mid-reset re-renders
   // --------------------------------------------------
   resetStore: () => {
-    // Block recomputation during reset
-    set({ _skipRecompute: true });
-
     set({
+      _skipRecompute: false,
       items: [],
       metrics: {
         cfd: [],
@@ -224,9 +223,6 @@ const createStoreImpl = (set, get) => ({
       whenHowLongResults: [],
       whenHowLongPercentiles: {}
     });
-
-    // Re-enable recomputation for future actions
-    set({ _skipRecompute: false });
   }
 });
 
