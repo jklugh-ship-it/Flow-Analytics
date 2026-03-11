@@ -11,21 +11,15 @@ import {
   ReferenceLine
 } from "recharts";
 
-// Label that appears *only* under percentile lines
-const PercentileLabel = ({ x, y, text, color }) => {
-  if (x == null || y == null) return null;
-
+// Two-line label positioned inside the chart just below the top edge
+const PercentileLabel = ({ viewBox, label, value, color }) => {
+  if (!viewBox) return null;
+  const { x, y } = viewBox;
   return (
-    <text
-      x={x}
-      y={y + 20}
-      textAnchor="middle"
-      fill={color}
-      fontSize={12}
-      fontWeight="500"
-    >
-      {text}
-    </text>
+    <g>
+      <text x={x + 4} y={y + 14} fill={color} fontSize={11} fontWeight={600}>{label}</text>
+      <text x={x + 4} y={y + 26} fill={color} fontSize={11}>{value}d</text>
+    </g>
   );
 };
 
@@ -101,64 +95,20 @@ export default function WhenHowLongHistogram({ results }) {
             barSize={20}
           />
 
-          {/* P50 */}
           {percentiles.p50 !== undefined && (
-            <>
-              <ReferenceLine
-                x={percentiles.p50}
-                stroke="#2563eb"
-                strokeDasharray="3 3"
-              />
-              <ReferenceLine
-                x={percentiles.p50}
-                label={
-                  <PercentileLabel
-                    color="#2563eb"
-                    text={`P50 (${percentiles.p50})`}
-                  />
-                }
-              />
-            </>
+            <ReferenceLine x={percentiles.p50} stroke="#2563eb" strokeDasharray="3 3"
+              label={(props) => <PercentileLabel {...props} label="P50" value={percentiles.p50} color="#2563eb" />}
+            />
           )}
-
-          {/* P85 */}
           {percentiles.p85 !== undefined && (
-            <>
-              <ReferenceLine
-                x={percentiles.p85}
-                stroke="#7c3aed"
-                strokeDasharray="3 3"
-              />
-              <ReferenceLine
-                x={percentiles.p85}
-                label={
-                  <PercentileLabel
-                    color="#7c3aed"
-                    text={`P85 (${percentiles.p85})`}
-                  />
-                }
-              />
-            </>
+            <ReferenceLine x={percentiles.p85} stroke="#7c3aed" strokeDasharray="3 3"
+              label={(props) => <PercentileLabel {...props} label="P85" value={percentiles.p85} color="#7c3aed" />}
+            />
           )}
-
-          {/* P95 */}
           {percentiles.p95 !== undefined && (
-            <>
-              <ReferenceLine
-                x={percentiles.p95}
-                stroke="#dc2626"
-                strokeDasharray="3 3"
-              />
-              <ReferenceLine
-                x={percentiles.p95}
-                label={
-                  <PercentileLabel
-                    color="#dc2626"
-                    text={`P95 (${percentiles.p95})`}
-                  />
-                }
-              />
-            </>
+            <ReferenceLine x={percentiles.p95} stroke="#dc2626" strokeDasharray="3 3"
+              label={(props) => <PercentileLabel {...props} label="P95" value={percentiles.p95} color="#dc2626" />}
+            />
           )}
         </BarChart>
       </ResponsiveContainer>

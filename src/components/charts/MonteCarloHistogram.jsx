@@ -108,7 +108,7 @@ export default function MonteCarloHistogram({ results }) {
               x={percentiles.p05}
               stroke="#7c3aed"
               strokeDasharray="3 3"
-              label={{ value: "5th", position: "top", fill: "#7c3aed" }}
+              label={(props) => { const {x,y} = props.viewBox; return (<g><text x={x+4} y={y+14} fill="#7c3aed" fontSize={11} fontWeight={600}>95% chance</text><text x={x+4} y={y+26} fill="#7c3aed" fontSize={11}>≥{percentiles.p05} items</text></g>); }}
             />
           )}
           {percentiles.p15 !== undefined && (
@@ -116,7 +116,7 @@ export default function MonteCarloHistogram({ results }) {
               x={percentiles.p15}
               stroke="#dc2626"
               strokeDasharray="3 3"
-              label={{ value: "15th", position: "top", fill: "#dc2626" }}
+              label={(props) => { const {x,y} = props.viewBox; return (<g><text x={x+4} y={y+14} fill="#dc2626" fontSize={11} fontWeight={600}>85% chance</text><text x={x+4} y={y+26} fill="#dc2626" fontSize={11}>≥{percentiles.p15} items</text></g>); }}
             />
           )}
           {percentiles.p50 !== undefined && (
@@ -124,7 +124,7 @@ export default function MonteCarloHistogram({ results }) {
               x={percentiles.p50}
               stroke="#2563eb"
               strokeDasharray="3 3"
-              label={{ value: "50th", position: "top", fill: "#2563eb" }}
+              label={(props) => { const {x,y} = props.viewBox; return (<g><text x={x+4} y={y+14} fill="#2563eb" fontSize={11} fontWeight={600}>50% chance</text><text x={x+4} y={y+26} fill="#2563eb" fontSize={11}>≥{percentiles.p50} items</text></g>); }}
             />
           )}
         </BarChart>

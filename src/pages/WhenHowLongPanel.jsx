@@ -161,19 +161,28 @@ export default function WhenHowLongPanel({ throughputWindow }) {
         ) : (
           <ul>
             <li>
-              There is a <strong>50%</strong> chance of finishing in{" "}
-              <strong>{p50}</strong> or fewer days
-              {startDate && endDates ? ` (around ${endDates.p50})` : ""}.
+              There is a <strong>50%</strong> chance of finishing by{" "}
+              {startDate && endDates ? (
+                <><strong>{endDates.p50}</strong> ({p50} days)</>
+              ) : (
+                <><strong>{p50} days</strong></>
+              )}{" "}or earlier.
             </li>
             <li>
-              There is a <strong>85%</strong> chance of finishing in{" "}
-              <strong>{p85}</strong> or fewer days
-              {startDate && endDates ? ` (around ${endDates.p85})` : ""}.
+              There is an <strong>85%</strong> chance of finishing by{" "}
+              {startDate && endDates ? (
+                <><strong>{endDates.p85}</strong> ({p85} days)</>
+              ) : (
+                <><strong>{p85} days</strong></>
+              )}{" "}or earlier.
             </li>
             <li>
-              There is a <strong>95%</strong> chance of finishing in{" "}
-              <strong>{p95}</strong> or fewer days
-              {startDate && endDates ? ` (around ${endDates.p95})` : ""}.
+              There is a <strong>95%</strong> chance of finishing by{" "}
+              {startDate && endDates ? (
+                <><strong>{endDates.p95}</strong> ({p95} days)</>
+              ) : (
+                <><strong>{p95} days</strong></>
+              )}{" "}or earlier.
             </li>
           </ul>
         )}

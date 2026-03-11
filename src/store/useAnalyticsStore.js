@@ -131,7 +131,13 @@ const createStoreImpl = (set, get) => ({
   },
 
   setItems: (items) => {
-    set({ items });
+    set({
+      items,
+      howManyResults: [],
+      howManyPercentiles: {},
+      whenHowLongResults: [],
+      whenHowLongPercentiles: {}
+    });
     recomputeEverything(get, set);
   },
 
@@ -184,6 +190,14 @@ const createStoreImpl = (set, get) => ({
         ...get().whenHowLongSettings,
         ...settings
       }
+    }),
+
+  clearForecastResults: () =>
+    set({
+      howManyResults: [],
+      howManyPercentiles: {},
+      whenHowLongResults: [],
+      whenHowLongPercentiles: {}
     }),
 
   // --------------------------------------------------

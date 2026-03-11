@@ -37,11 +37,14 @@ export default function AgingWipChart({
 
   const { p50, p70, p85, p95 } = cycleTimePercentiles || {};
   const refLines = [
-    { key: "50%", value: p50, color: "#999" },
-    { key: "70%", value: p70, color: "#999" },
-    { key: "85%", value: p85, color: "#999" },
-    { key: "95%", value: p95, color: "#999" }
+    { key: "50%", value: p50, color: "#2563eb" },
+    { key: "70%", value: p70, color: "#10b981" },
+    { key: "85%", value: p85, color: "#f59e0b" },
+    { key: "95%", value: p95, color: "#ef4444" }
   ].filter((r) => typeof r.value === "number");
+
+  // Ensure Y axis always shows all reference lines even if WIP items are young
+  const maxRefValue = refLines.length > 0 ? Math.max(...refLines.map((r) => r.value)) : 0;
 
   function AgingTooltip({ active, payload }) {
     if (!active || !payload || payload.length === 0) return null;
@@ -94,6 +97,7 @@ export default function AgingWipChart({
             dataKey="y"
             name="Age (days)"
             allowDecimals={false}
+            domain={[0, (dataMax) => Math.max(dataMax, maxRefValue) * 1.1]}
           />
 
           <Tooltip content={<AgingTooltip />} />
@@ -104,7 +108,6 @@ export default function AgingWipChart({
               y={r.value}
               stroke={r.color}
               strokeDasharray="4 4"
-              label={`${r.key} (${r.value}d)`}
             />
           ))}
 
@@ -140,6 +143,21 @@ export default function AgingWipChart({
           </div>
         ))}
       </div>
+      {/* Percentile legend */}
+      {refLines.length > 0 && (
+        <div style={{ display: "flex", gap: "1.25rem", flexWrap: "wrap", marginTop: "0.75rem" }}>
+          {refLines.map((r) => (
+            <div key={r.key} style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: 12 }}>
+              <div style={{
+                width: 24, height: 2,
+                borderTop: `2px dashed ${r.color}`
+              }} />
+              <span style={{ color: r.color, fontWeight: 600 }}>{r.key}</span>
+              <span style={{ color: "#6b7280" }}>{r.value}d</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
