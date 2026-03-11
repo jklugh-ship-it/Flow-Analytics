@@ -91,7 +91,7 @@ Covered behaviors:
 
 ### Test File Naming
 
-Test files are named `<subject>_test.js` and live in the `tests/` directory. They mirror the source structure but are flat — there are no subdirectories under `tests/`.
+Test files are named `<subject>.test.js` and live in the `tests/` directory. They mirror the source structure but are flat — there are no subdirectories under `tests/`.
 
 ### Describe / It Structure
 
@@ -125,7 +125,7 @@ There are currently no React component tests. The testing strategy focuses on th
 
 ## Adding New Tests
 
-New test files should be added to `tests/` and named `<subject>_test.js`. The Vite config picks them up automatically via the `tests/**/*.test.js` glob.
+New test files should be added to `tests/` and named `<subject>.test.js`. The Vite config picks them up automatically via the `tests/**/*.test.js` glob.
 
 For pure functions, no setup is needed — import the function and call it directly. For store tests, mock `recomputeEverything` to keep tests fast and isolated, and call `resetStore()` in `beforeEach`.
 

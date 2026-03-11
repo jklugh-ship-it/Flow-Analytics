@@ -2,6 +2,42 @@
 
 import React from "react";
 import { card } from "../styles/cards";
+import { auditStamp } from "../generated/auditStamp";
+
+function SecurityStatus() {
+  const { date, vulnerabilities, severities } = auditStamp;
+  const clean = vulnerabilities === 0;
+  const unknown = vulnerabilities === -1;
+
+  return (
+    <div style={{
+      marginTop: "0.75rem",
+      padding: "0.75rem 1rem",
+      borderRadius: "6px",
+      background: clean ? "#f0fdf4" : unknown ? "#fafafa" : "#fef2f2",
+      border: `1px solid ${clean ? "#86efac" : unknown ? "#e5e7eb" : "#fca5a5"}`
+    }}>
+      <div style={{ fontWeight: 600, color: clean ? "#16a34a" : unknown ? "#6b7280" : "#dc2626" }}>
+        {clean
+          ? "✓ 0 known vulnerabilities"
+          : unknown
+          ? "Vulnerability status unknown"
+          : `${vulnerabilities} known ${vulnerabilities === 1 ? "vulnerability" : "vulnerabilities"}`}
+      </div>
+      {!clean && !unknown && (
+        <div style={{ fontSize: 13, color: "#6b7280", marginTop: "0.25rem" }}>
+          {severities.critical > 0 && <span style={{ marginRight: "0.75rem" }}>Critical: {severities.critical}</span>}
+          {severities.high > 0 && <span style={{ marginRight: "0.75rem" }}>High: {severities.high}</span>}
+          {severities.moderate > 0 && <span style={{ marginRight: "0.75rem" }}>Moderate: {severities.moderate}</span>}
+          {severities.low > 0 && <span>Low: {severities.low}</span>}
+        </div>
+      )}
+      <div style={{ fontSize: 12, color: "#9ca3af", marginTop: "0.25rem" }}>
+        Last checked: {date} — verified at build time via <code>npm audit</code>
+      </div>
+    </div>
+  );
+}
 
 export default function Privacy() {
   return (
@@ -135,6 +171,19 @@ export default function Privacy() {
             help verifying the privacy model, please reach out. Transparency is a
             core part of this project&apos;s design.
           </p>
+          <h2>8. Security</h2>
+          <p style={{ marginTop: "0.75rem" }}>
+            This application is a fully static client-side build with no backend,
+            no API endpoints, and no server-side code. The traditional web attack
+            surface — SQL injection, authentication bypass, server-side request
+            forgery — does not exist here.
+          </p>
+          <p style={{ marginTop: "0.75rem" }}>
+            All dependencies are audited automatically on every deploy using{" "}
+            <code>npm audit</code>. The result below reflects the state of the
+            dependency tree at the time this version was built.
+          </p>
+          <SecurityStatus />
       </div>
     </div>
   );

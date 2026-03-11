@@ -8,10 +8,10 @@ A browser-based tool for measuring how work moves through your team's process. U
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Then open [http://localhost:5173](http://localhost:5173).
 
 ---
 
@@ -26,17 +26,20 @@ See [`docs/user-guide.md`](docs/user-guide.md) for full instructions including C
 
 ---
 
-## Privacy
+## Privacy & Security
 
 All data is processed entirely in your browser. Nothing is uploaded or transmitted. Your workflow configuration is saved to `localStorage`; your work item data is not. You can verify this by watching the Network tab in your browser's developer tools while uploading a file — no outbound requests will appear.
+
+See [`SECURITY.md`](SECURITY.md) for a full security model description, including independent verification instructions and the automated dependency audit process.
 
 ---
 
 ## Development
 
 ```bash
-npm start          # Run dev server
-npm run build      # Production build
+npm run dev        # Run dev server
+npm run build      # Production build (also runs dependency audit)
+npm run preview    # Preview production build locally
 npm test           # Run tests
 npm run test:ui    # Run tests with Vitest UI
 ```
@@ -56,6 +59,7 @@ Tests live in `tests/`. Coverage is reported via V8.
 | [`docs/architecture.md`](docs/architecture.md) | Code structure, design decisions, and extension points |
 | [`docs/testing.md`](docs/testing.md) | Test coverage, conventions, and known gaps |
 | [`docs/data-model.md`](docs/data-model.md) | Normalized data shapes used throughout the pipeline |
+| [`SECURITY.md`](SECURITY.md) | Security model, dependency audit process, and verification |
 
 ---
 

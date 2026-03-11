@@ -158,6 +158,5 @@ User runs Monte Carlo simulation
 
 ## Known Architectural Notes
 
-- `WorkflowStateManager.jsx` is an unused component that duplicates drag-and-drop functionality already provided by `WorkflowDesigner.jsx`. It uses a different drag-and-drop library (`@hello-pangea/dnd`) and can be deleted.
-- `AnalyticsPage.jsx` defines nested routes that are not connected to the main router in `App.js`. The active chart pages are routed directly. This file can be deleted.
+
 - The `_skipRecompute` flag in the store exists to prevent `recomputeEverything` from running during `resetStore`, when the store is in a temporarily inconsistent state. It is guarded with `try/finally` to ensure it is always cleared.
