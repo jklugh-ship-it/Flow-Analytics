@@ -5,7 +5,7 @@ import { card, cardTitle } from "../styles/cards";
 
 const REPO = "https://github.com/jklugh-ship-it/Flow-Analytics";
 const DOCS_BASE = `${REPO}/blob/main/docs`;
-const SECURITY_URL = `${REPO}/blob/main/SECURITY.md`;
+const SECURITY_URL = `${DOCS_BASE}/security.md`;
 
 const docs = [
   {

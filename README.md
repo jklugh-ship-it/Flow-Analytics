@@ -30,7 +30,7 @@ See [`docs/user-guide.md`](docs/user-guide.md) for full instructions including C
 
 All data is processed entirely in your browser. Nothing is uploaded or transmitted. Your workflow configuration is saved to `localStorage`; your work item data is not. You can verify this by watching the Network tab in your browser's developer tools while uploading a file — no outbound requests will appear.
 
-See [`SECURITY.md`](SECURITY.md) for a full security model description, including independent verification instructions and the automated dependency audit process.
+See [`docs/security.md`](docs/security.md) for a full security model description, including independent verification instructions and the automated dependency audit process.
 
 ---
 
@@ -59,7 +59,7 @@ Tests live in `tests/`. Coverage is reported via V8.
 | [`docs/architecture.md`](docs/architecture.md) | Code structure, design decisions, and extension points |
 | [`docs/testing.md`](docs/testing.md) | Test coverage, conventions, and known gaps |
 | [`docs/data-model.md`](docs/data-model.md) | Normalized data shapes used throughout the pipeline |
-| [`SECURITY.md`](SECURITY.md) | Security model, dependency audit process, and verification |
+| [`docs/security.md`](docs/security.md) | Security model, dependency audit process, and verification |
 
 ---
 
