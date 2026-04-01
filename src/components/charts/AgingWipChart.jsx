@@ -50,12 +50,18 @@ export default function AgingWipChart({
     if (!active || !payload || payload.length === 0) return null;
 
     const idx = payload[0].payload.x;
+    const ageDays = payload[0].payload.y;
     const state = visibleStates[idx];
+
+    // Find all items at this exact position
+    const matches = data.filter((pt) => pt.x === idx && pt.y === ageDays);
+    const ids = matches.map((pt) => pt.id);
 
     return (
       <div style={{ background: "white", padding: "0.5rem", border: "1px solid #ccc" }}>
         <strong>{state}</strong>
-        <div>Age: {payload[0].payload.y} days</div>
+        <div>Age: {ageDays} days</div>
+        <div>{ids.length > 1 ? "Items: " : "Item: "}{ids.join(", ")}</div>
       </div>
     );
   }
