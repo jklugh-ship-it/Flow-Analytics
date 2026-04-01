@@ -1,3 +1,5 @@
+// src/utils/metrics/getCurrentState.js
+
 export function getCurrentState(item, workflowStates) {
   const entered = item.entered || {};
   let lastState = null;
@@ -9,9 +11,9 @@ export function getCurrentState(item, workflowStates) {
       entered[state];
 
     if (d instanceof Date && (lastDate === null || d >= lastDate)) {
-	lastState = state;
-	lastDate = d;
-}
+      lastState = state;
+      lastDate = d;
+    }
   });
 
   return lastState;

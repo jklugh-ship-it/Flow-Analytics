@@ -8,6 +8,7 @@ import { computeCycleTimeScatter } from "./computeCycleTimeScatter";
 import { computeAgingWip } from "./computeAgingWip";
 import { computeCycleTimePercentiles } from "./computeCycleTimePercentiles";
 import { computeStability } from "./computeStability";
+import { getCurrentState } from "./getCurrentState";
 
 /**
  * Orchestrates all metric computations.
@@ -33,35 +34,17 @@ export function computeAllMetrics(items, workflowStates, inProgressStates) {
     );
   });
 
-  // Derive current state from latest entered_<state> timestamp
-  function getCurrentState(item, workflowStates) {
-  let latestState = null;
-  let latestDate = null;
-
-  for (const state of workflowStates) {
-    const d = item[`entered_${state}`];
-    if (d instanceof Date) {
-      if (!latestDate || d > latestDate) {
-        latestDate = d;
-        latestState = state;
-      }
-    }
-  }
-
-  return latestState;
-  }
-
   // Ordered WIP state counts
   const wipStateCounts = {};
   for (const state of workflowStates) {
-  wipStateCounts[state] = 0;
+    wipStateCounts[state] = 0;
   }
 
   for (const item of wipItems) {
-  const state = getCurrentState(item, workflowStates);
-  if (state) {
-    wipStateCounts[state] += 1;
-  }
+    const state = getCurrentState(item, workflowStates);
+    if (state) {
+      wipStateCounts[state] += 1;
+    }
   }
 
   const stability = computeStability(
