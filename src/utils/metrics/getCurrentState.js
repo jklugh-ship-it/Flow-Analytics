@@ -8,10 +8,10 @@ export function getCurrentState(item, workflowStates) {
       entered[`entered_${state}`] ??
       entered[state];
 
-    if (d instanceof Date && (lastDate === null || d > lastDate)) {
-      lastState = state;
-      lastDate = d;
-    }
+    if (d instanceof Date && (lastDate === null || d >= lastDate)) {
+	lastState = state;
+	lastDate = d;
+}
   });
 
   return lastState;
